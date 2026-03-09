@@ -1,0 +1,79 @@
+# joint_limits.yaml allows the dynamics properties specified in the URDF to be overwritten or augmented as needed
+# Specific joint properties can be changed with the keys [max_position, min_position, max_velocity, max_acceleration]
+# Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
+joint_limits:
+  bhand_j11_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j12_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j13_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j21_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j22_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j23_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j32_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  bhand_j33_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q1:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q2:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q3:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q4:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q5:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q6:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10
+  q7:
+    has_velocity_limits: true
+    max_velocity: 10
+    has_acceleration_limits: true
+    max_acceleration: 10

@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+  #WAM without outer link
+  <xacro:macro name="wam_base">
+    <link name="world" />
+    <link name="base_link">
+      <default_inertial xyz="0 0 -0.346" rpy="0 0 0" mass="0.5" />
+      <visual>
+	<origin xyz="0 0 -0.346" rpy="0 0 ${pi/2}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_base_link.STL" />
+	</geometry>
+	<base_color />
+      </visual>
+      <collision>
+	<origin xyz="0 0 -0.346" rpy="0 0 ${pi/2}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_base_link.STL" />
+	</geometry>
+      </collision>
+    </link>
+    <joint name="world_fixed_joint" type="fixed">
+      <origin xyz="0 0 0.346" rpy="0 0 0" />
+      <parent link="world" />
+      <child link="base_link" />
+    </joint>
+    <link name="FirstLink">
+      <default_inertial xyz="0 0.186 0" rpy="0 ${pi/2} ${pi}" mass="0.1" />
+      <visual>
+	<origin xyz="0 0.186 0" rpy="0 0 ${pi}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_link1.STL" />
+	</geometry>
+	<first_link_color />
+      </visual>
+      <collision>
+	<origin xyz="0 0.186 0" rpy="0 -${pi/2} ${pi}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_link1.STL" />
+	</geometry>
+      </collision>
+    </link>
+    <joint name="q1" type="revolute">
+      <origin xyz="0 0 0" rpy="-${pi/2} 0 0" />
+      <parent link="base_link" />
+      <child link="FirstLink" />
+      <axis xyz="0 -1 0" />
+      <dynamics damping="50.0" friction="10" />
+      <limit lower="-2.6" upper="2.6" effort="40" velocity="10" />
+    </joint>
+    <link name="SecondLink">
+      <default_inertial xyz="0 0 0" rpy="${pi/2} 0 ${pi/2}" mass="0.1" />
+      <visual>
+	<origin xyz="0 0 0" rpy="${pi/2} 0 ${pi/2}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_link2.STL" />
+	</geometry>
+	<first_link_color />
+      </visual>
+      <collision>
+	<origin xyz="0 0 0" rpy="${pi/2} 0 ${pi/2}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_link2.STL" />
+	</geometry>
+      </collision>
+    </link>
+    <joint name="q2" type="revolute">
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
+      <parent link="FirstLink" />
+      <child link="SecondLink" />
+      <axis xyz="0 1 0" />
+      <dynamics damping="50.0" friction="10" />
+      <limit lower="-2" upper="2" effort="40" velocity="10" />
+    </joint>
+    <link name="ThirdLink">
+      <default_inertial xyz="0 0.896 0" rpy="0 ${pi/2} ${pi}" mass="0.1" />
+      <visual>
+	<origin xyz="0 0.896 0" rpy="0 ${pi/2} ${pi}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_link3.STL" />
+	</geometry>
+	<material name="">
+	  <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+	</material>
+      </visual>
+      <collision>
+	<origin xyz="0 0.896 0" rpy="0 ${pi/2} ${pi}" />
+	<geometry>
+	  <mesh filename="package://wam_description/meshes/wam_link3.STL" />
+	</geometry>
+      </collision>
+    </link>
+    <joint name="q3" type="revolute">
+      <origin xyz="0 0 0.55" rpy="-${pi/2} 0 0" />
+      <parent link="SecondLink" />
+      <child link="ThirdLink" />
+      <axis xyz="0 -1 0" />
+      <dynamics damping="50.0" friction="10" />
+      <limit lower="-2.8" upper="2.8" effort="40" velocity="10" />
+    </joint>
+  </xacro:macro>
+</robot>

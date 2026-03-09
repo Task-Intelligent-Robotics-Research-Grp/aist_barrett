@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<robot name="aaa" xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <link name ="base_link"/>
+
+  <xacro:include filename="$(find wam_description
+			   )/urdf/4dof_link.urdf.xacro" />
+
+  <xacro:four_dof_link parent_link="base_link">
+  </xacro:four_dof_link>
+
+</robot>

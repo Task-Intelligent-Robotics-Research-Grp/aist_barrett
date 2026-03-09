@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+  <xacro:macro name="fts" params="prefix parent_link *origin">
+    <link name="${prefix}fts_link">
+      <!-- <default_inertial xyz="${xyz}" rpy="${rpy}" mass="0.01" /> -->
+      <visual>
+	<origin rpy="${pi/2} 0 0" xyz="0 0 0.01" />
+	<geometry name="link_bhand_ftsensor_visual">
+	  <mesh filename="package://wam_description/meshes/ft_sensor.STL" />
+	</geometry>
+	<base_color />
+      </visual>
+      <collision>
+	<origin rpy="0 0 0" xyz="0 0 0" />
+	<geometry name="link_bhand_ftsensor_collision">
+	  <mesh filename="package://wam_description/meshes/ft_sensor.STL" />
+	</geometry>
+	<contact_coefficients kd="1.0" kp="1000.0" mu="0" />
+      </collision>
+    </link>
+    <joint name="${prefix}ft_sensor_joint" type="fixed">
+      <parent link="${parent_link}" />
+      <child link="${prefix}fts_link" />
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <gazebo reference="${prefix}ft_sensor_joint">
+      <disableFixedJointLumping>true</disableFixedJointLumping>
+      <sensor name="ForceTorqueSensor" type="force_torque">
+	<force_torque>
+          <frame>${prefix}fts_link</frame>
+          <measure_direction>child_to_parent</measure_direction>
+	</force_torque>
+      </sensor>
+    </gazebo>
+    <gazebo>
+      <!-- The ft_sensor plugin -->
+      <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+        <updateRate>50.0</updateRate>
+        <topicName>/FTS/States</topicName>
+        <jointName>${prefix}ft_sensor_joint</jointName>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

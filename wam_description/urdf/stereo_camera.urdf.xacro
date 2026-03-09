@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+  <xacro:macro name="stereo_camera" params="prefix parent_link *origin">
+    <link name="${prefix}camera_link">
+      <origin xyz="0 0 0.0" rpy="0 -1.5706 0" />
+    </link>
+    <joint name="camera_joint" type="fixed">
+      <parent link="${parent_link}" />
+      <child link="${prefix}camera_link" />
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <link name="${prefix}ir_link">
+      <origin xyz="0 0 0.0" rpy="0 -1.5706 0" />
+    </link>
+    <joint name="${prefix}ir_joint" type="fixed">
+      <origin xyz="${xyz}" rpy="0 -1.5706 0" />
+      <parent link="${parent_link}" />
+      <child link="${prefix}ir_link" />
+    </joint>
+    <!-- camera -->
+    <gazebo reference="${prefix}camera_link">
+      <sensor type="multicamera" name="stereo_camera">
+        <update_rate>30.0</update_rate>
+	<camera name="left">
+	  <!-- fov from Perception Palm spec sheet -->
+          <horizontal_fov>1.0472</horizontal_fov>
+          <image>
+            <width>320</width>
+            <height>240</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.6</near>
+            <far>7.2</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+	</camera>
+	<camera name="right">
+          <pose>0 -0.07 0 0 0 0</pose>
+          <horizontal_fov>1.0472</horizontal_fov>
+          <image>
+            <width>320</width>
+            <height>240</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.6</near>
+            <far>7.2</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+	</camera>
+	<plugin name="stereo_camera_controller"
+		filename="libgazebo_ros_multicamera.so">
+          <alwaysOn>true</alwaysOn>
+          <updateRate>30.0</updateRate>
+          <cameraName>perception_palm</cameraName>
+          <imageTopicName>image_raw</imageTopicName>
+          <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+          <frameName>left_camera_optical_frame</frameName>
+          <!--<rightFrameName>right_camera_optical_frame</rightFrameName>-->
+          <hackBaseline>0.07</hackBaseline>
+          <distortionK1>0.0</distortionK1>
+          <distortionK2>0.0</distortionK2>
+          <distortionK3>0.0</distortionK3>
+          <distortionT1>0.0</distortionT1>
+          <distortionT2>0.0</distortionT2>
+	</plugin>
+
+      </sensor>
+    </gazebo>
+    <gazebo reference="${prefix}ir_link">
+      <sensor type="ray" name="barrett_ir_sensor">
+        <pose>
+          0 0 0 0 0 0
+        </pose>
+        <visualize>
+          true
+        </visualize>
+        <update_rate>
+          50
+        </update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>
+                10
+              </samples>
+              <resolution>
+                1
+              </resolution>
+              <min_angle>
+                -0.14835
+              </min_angle>
+              <max_angle>
+                0.14835
+              </max_angle>
+            </horizontal>
+            <vertical>
+              <samples>
+                10
+              </samples>
+              <resolution>
+                1
+              </resolution>
+              <min_angle>
+                -0.14835
+              </min_angle>
+              <max_angle>
+                0.14835
+              </max_angle>
+            </vertical>
+          </scan>
+          <range>
+            <min>
+              0.04
+            </min>
+            <max>
+              0.5
+            </max>
+            <resolution>
+              0.002
+            </resolution>
+          </range>
+        </ray>
+        <plugin filename="libgazebo_ros_range.so" name="gazebo_ros_range">
+          <gaussianNoise>
+            0.005
+          </gaussianNoise>
+          <alwaysOn>
+            true
+          </alwaysOn>
+          <updateRate>
+            50
+          </updateRate>
+          <topicName>
+            perception_palm/ir/range
+          </topicName>
+          <frameName>
+            ${prefix}ir_link
+          </frameName>
+          <radiation>
+            INFRARED
+          </radiation>
+          <fov>
+            0.2967
+          </fov>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,33 @@
+<package format="3">
+  <name>wam_description</name>
+  <version>1.0.0</version>
+  <description>
+    <p>URDF Description package for WAM and BarrettHand</p>
+  </description>
+  <author>Barrett Technology, LLC</author>
+  <maintainer email="support@barrett.com" />
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake_core</buildtool_depend>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>ur_simulation_gz</exec_depend>
+  <exec_depend>ros_gz_image</exec_depend>
+  <!-- <exec_depend>aist_bringup</exec_depend> -->
+
+  <buildtool_export_depend>ament_cmake_core</buildtool_export_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+  <!-- <buildtool_depend>catkin</buildtool_depend> -->
+  <!-- <depend>roslaunch</depend> -->
+  <!-- <depend>robot_state_publisher</depend> -->
+  <!-- <depend>rviz</depend> -->
+  <!-- <depend>joint_state_publisher</depend> -->
+  <!-- <depend>gazebo</depend> -->
+  <!-- <export> -->
+  <!--   <architecture_independent /> -->
+  <!-- </export> -->
+</package>

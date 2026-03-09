@@ -1,0 +1,679 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+  <xacro:macro name="palm_tactile_sensors">
+    <gazebo>
+      <link name="base">
+	<gravity>
+	  0
+	</gravity>
+	<collision name="pressure_pad_1">
+	  <pose>
+	    0.015 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_2">
+	  <pose>
+	    0.015 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_3">
+	  <pose>
+	    0.015 0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_4">
+	  <pose>
+	    0.015 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_5">
+	  <pose>
+	    0.015 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_6">
+	  <pose>
+	    0.005 -0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_7">
+	  <pose>
+	    0.005 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_8">
+	  <pose>
+	    0.005 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_9">
+	  <pose>
+	    0.005 0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_10">
+	  <pose>
+	    0.005 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_11">
+	  <pose>
+	    0.005 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_12">
+	  <pose>
+	    0.005 0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_13">
+	  <pose>
+	    -0.005 -0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_14">
+	  <pose>
+	    -0.005 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_15">
+	  <pose>
+	    -0.005 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_16">
+	  <pose>
+	    -0.005 0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_17">
+	  <pose>
+	    -0.005 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_18">
+	  <pose>
+	    -0.005 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_19">
+	  <pose>
+	    -0.005 0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_20">
+	  <pose>
+	    -0.015 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_21">
+	  <pose>
+	    -0.015 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_22">
+	  <pose>
+	    -0.015 0.0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_23">
+	  <pose>
+	    -0.015 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<collision name="pressure_pad_24">
+	  <pose>
+	    -0.015 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</collision>
+	<visual name="pressure_pad_1">
+	  <pose>
+	    0.015 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_2">
+	  <pose>
+	    0.015 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_3">
+	  <pose>
+	    0.015 0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_4">
+	  <pose>
+	    0.015 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_5">
+	  <pose>
+	    0.015 0.020 0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_6">
+	  <pose>
+	    0.005 -0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_7">
+	  <pose>
+	    0.005 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_8">
+	  <pose>
+	    0.005 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_9">
+	  <pose>
+	    0.005 0.0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_10">
+	  <pose>
+	    0.005 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_11">
+	  <pose>
+	    0.005 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_12">
+	  <pose>
+	    0.005 0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_13">
+	  <pose>
+	    -0.005 -0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_14">
+	  <pose>
+	    -0.005 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_15">
+	  <pose>
+	    -0.005 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_16">
+	  <pose>
+	    -0.005 0.0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_17">
+	  <pose>
+	    -0.005 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_18">
+	  <pose>
+	    -0.005 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_19">
+	  <pose>
+	    -0.005 0.030 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_20">
+	  <pose>
+	    -0.015 -0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_21">
+	  <pose>
+	    -0.015 -0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_22">
+	  <pose>
+	    -0.015 0.0 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_23">
+	  <pose>
+	    -0.015 0.010 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<visual name="pressure_pad_24">
+	  <pose>
+	    -0.015 0.020 1.32 0 0 0
+	  </pose>
+	  <geometry>
+	    <box>
+	      <size>
+		0.01 0.01 0.001
+	      </size>
+	    </box>
+	  </geometry>
+	</visual>
+	<sensor name="bhand/palm" type="contact">
+	  <contact>
+	    <collision>
+	      pressure_pad_1
+	    </collision>
+	    <collision>
+	      pressure_pad_2
+	    </collision>
+	    <collision>
+	      pressure_pad_3
+	    </collision>
+	    <collision>
+	      pressure_pad_4
+	    </collision>
+	    <collision>
+	      pressure_pad_5
+	    </collision>
+	    <collision>
+	      pressure_pad_6
+	    </collision>
+	    <collision>
+	      pressure_pad_7
+	    </collision>
+	    <collision>
+	      pressure_pad_8
+	    </collision>
+	    <collision>
+	      pressure_pad_9
+	    </collision>
+	    <collision>
+	      pressure_pad_10
+	    </collision>
+	    <collision>
+	      pressure_pad_11
+	    </collision>
+	    <collision>
+	      pressure_pad_12
+	    </collision>
+	    <collision>
+	      pressure_pad_13
+	    </collision>
+	    <collision>
+	      pressure_pad_14
+	    </collision>
+	    <collision>
+	      pressure_pad_15
+	    </collision>
+	    <collision>
+	      pressure_pad_16
+	    </collision>
+	    <collision>
+	      pressure_pad_17
+	    </collision>
+	    <collision>
+	      pressure_pad_18
+	    </collision>
+	    <collision>
+	      pressure_pad_19
+	    </collision>
+	    <collision>
+	      pressure_pad_20
+	    </collision>
+	    <collision>
+	      pressure_pad_21
+	    </collision>
+	    <collision>
+	      pressure_pad_22
+	    </collision>
+	    <collision>
+	      pressure_pad_23
+	    </collision>
+	    <collision>
+	      pressure_pad_24
+	    </collision>
+	  </contact>
+	  <plugin name="my_plugin" filename="libPressurePlugin.so" />
+	  <update_rate>
+	    250
+	  </update_rate>
+	</sensor>
+      </link>
+      <joint name="fixed21" type="fixed">
+	<parent>
+	  bhand_base
+	</parent>
+	<child>
+	  base
+	</child>
+	<pose>
+	  0 0 0 0 0 0
+	</pose>
+      </joint>
+    </gazebo>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,28 @@
+<launch>
+	<arg name="4dof" default="false" />
+	<arg name="4dof_fts" default="false" />
+	<arg name="4dof_bhand" default="false" />
+	<arg name="4dof_fts_bhand" default="false" />
+	<arg name="7dof" default="false" />
+	<arg name="7dof_fts" default="false" />
+	<arg name="7dof_bhand" default="false" />
+	<arg name="7dof_fts_bhand" default="false" />
+	<arg name="bhand" default="false" />
+	<arg name="bhand_fts" default="false" />
+  <!-- loads moveit_controller_manager on the parameter server which is taken as argument 
+    if no argument is passed, moveit_simple_controller_manager will be set -->
+  <arg name="moveit_controller_manager" default="moveit_simple_controller_manager/MoveItSimpleControllerManager" />
+  <param name="moveit_controller_manager" value="$(arg moveit_controller_manager)"/>
+
+  <!-- loads ros_controllers to the param server -->
+  <rosparam if="$(arg 4dof)" file="$(find wam_moveit_config)/config/4dof_controllers.yaml"/>
+  <rosparam if="$(arg 4dof_fts)" file="$(find wam_moveit_config)/config/4dof_controllers.yaml"/>
+  <rosparam if="$(arg 4dof_bhand)" file="$(find wam_moveit_config)/config/4dof_hand_controllers.yaml"/>
+  <rosparam if="$(arg 4dof_fts_bhand)" file="$(find wam_moveit_config)/config/4dof_hand_controllers.yaml"/>
+  <rosparam if="$(arg 7dof)" file="$(find wam_moveit_config)/config/7dof_controllers.yaml"/>
+  <rosparam if="$(arg 7dof_fts)" file="$(find wam_moveit_config)/config/7dof_controllers.yaml"/>
+  <rosparam if="$(arg 7dof_bhand)" file="$(find wam_moveit_config)/config/7dof_hand_controllers.yaml"/>
+  <rosparam if="$(arg 7dof_fts_bhand)" file="$(find wam_moveit_config)/config/7dof_hand_controllers.yaml"/>
+  <rosparam if="$(arg bhand)" file="$(find wam_moveit_config)/config/bhand_controllers.yaml"/>
+  <rosparam if="$(arg bhand_fts)" file="$(find wam_moveit_config)/config/bhand_controllers.yaml"/>
+</launch>

@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<launch>
+	<arg name="paused" default="false" />
+	<arg name="gazebo_gui" default="true" />
+	<arg name="urdf_path" default="$(find wam_description)/urdf/wam.urdf.xacro" />
+	<arg name="robot_description" default="robot_description" />
+  <arg name="4dof" default="false" />
+  <arg name="4dof_fts" default="false" />
+  <arg name="4dof_bhand" default="false" />
+  <arg name="4dof_fts_bhand" default="false" />
+  <arg name="7dof" default="false" />
+  <arg name="7dof_fts" default="false" />
+  <arg name="7dof_bhand" default="false" />
+  <arg name="7dof_fts_bhand" default="false" />
+  <arg name="bhand" default="false" />
+  <arg name="bhand_fts" default="false" />
+  <arg name="mono_camera" default="false" />
+  <arg name="stereo_camera" default="false" />
+	<!-- startup simulated world -->
+	<include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="world_name" default="worlds/empty.world" />
+		<arg name="paused" value="$(arg paused)" />
+		<arg name="gui" value="$(arg gazebo_gui)" />
+	</include>
+  <!-- Load universal robot description format (URDF) -->
+  <param if="$(arg 4dof)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=false dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)"/>
+  <param if="$(arg 4dof_fts)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=false dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 4dof_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=true dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 4dof_fts_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=true dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=false dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof_fts)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=false dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=true dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof_fts_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=true dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=true dof:=0 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)"/>
+  <param if="$(arg bhand_fts)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=true dof:=0 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+
+	<!-- push robot_description to factory and spawn robot in gazebo at the origin, change x,y,z arguments to spawn in a different position -->
+	<node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model robot -x 0 -y 0 -z 0" respawn="false" output="screen" />
+	<include file="$(find wam_moveit_config)/launch/ros_controllers.launch">
+		<arg name="4dof" value="$(arg 4dof)" />
+		<arg name="4dof_fts" value="$(arg 4dof_fts)" />
+		<arg name="4dof_bhand" value="$(arg 4dof_bhand)" />
+		<arg name="4dof_fts_bhand" value="$(arg 4dof_fts_bhand)" />
+		<arg name="7dof" value="$(arg 7dof)" />
+		<arg name="7dof_fts" value="$(arg 7dof_fts)" />
+		<arg name="7dof_bhand" value="$(arg 7dof_bhand)" />
+		<arg name="7dof_fts_bhand" value="$(arg 7dof_fts_bhand)" />
+		<arg name="bhand" value="$(arg bhand)" />
+		<arg name="bhand_fts" value="$(arg bhand_fts)" />
+	</include>
+</launch>

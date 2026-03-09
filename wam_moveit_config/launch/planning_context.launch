@@ -1,0 +1,64 @@
+<launch>
+  <!-- By default we do not overwrite the URDF. Change the following to true to change the default behavior -->
+  <arg name="load_robot_description" default="false"/>
+  <arg name="urdf_path" default="$(find wam_description)/urdf/wam.urdf.xacro" />
+  <!-- The name of the parameter under which the URDF is loaded -->
+  <arg name="4dof" default="false" />
+  <arg name="4dof_fts" default="false" />
+  <arg name="4dof_bhand" default="false" />
+  <arg name="4dof_fts_bhand" default="false" />
+  <arg name="7dof" default="false" />
+  <arg name="7dof_fts" default="false" />
+  <arg name="7dof_bhand" default="false" />
+  <arg name="7dof_fts_bhand" default="false" />
+  <arg name="bhand" default="false" />
+  <arg name="bhand_fts" default="false" />
+  <arg name="mono_camera" default="false" />
+  <arg name="stereo_camera" default="false" />
+
+  <arg name="robot_description" default="robot_description"/>
+  <!-- Load universal robot description format (URDF) -->
+   <param if="$(arg 4dof)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=false dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)"/>
+  <param if="$(arg 4dof_fts)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=false dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 4dof_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=true dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 4dof_fts_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=true dof:=4 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=false dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof_fts)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=false dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=true dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg 7dof_fts_bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=true dof:=7 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  <param if="$(arg bhand)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=false barrett_hand:=true dof:=0 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)"/>
+  <param if="$(arg bhand_fts)" name="$(arg robot_description)" command="xacro '$(arg urdf_path)' fts:=true barrett_hand:=true dof:=0 mono_camera:=$(arg mono_camera) stereo_camera:=$(arg stereo_camera)" />
+  
+  <!-- The semantic description that corresponds to the URDF -->
+  <param if="$(arg 4dof)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam4dof.srdf" />
+  <param if="$(arg 4dof_fts)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam4dof.srdf" />
+  <param if="$(arg 4dof_bhand)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam4dof_hand.srdf" />
+  <param if="$(arg 4dof_fts_bhand)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam4dof_hand.srdf" />
+  <param if="$(arg 7dof)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam7dof.srdf" />
+  <param if="$(arg 7dof_fts)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam7dof.srdf" />
+  <param if="$(arg 7dof_bhand)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam7dof_hand.srdf" />
+  <param if="$(arg 7dof_fts_bhand)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/wam7dof_hand.srdf" />
+  <param if="$(arg bhand)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/bhand.srdf" />
+  <param if="$(arg bhand_fts)" name="$(arg robot_description)_semantic" textfile="$(find wam_moveit_config)/config/bhand.srdf" />
+  
+
+  <!-- Load updated joint limits (override information from URDF) -->
+  <group ns="$(arg robot_description)_planning">
+    <rosparam if="$(arg 4dof)" command="load" file="$(find wam_moveit_config)/config/4dof_joint_limits.yaml"/>
+    <rosparam if="$(arg 4dof_fts)" command="load" file="$(find wam_moveit_config)/config/4dof_joint_limits.yaml"/>
+    <rosparam if="$(arg 4dof_bhand)" command="load" file="$(find wam_moveit_config)/config/4dof_hand_joint_limits.yaml"/>
+    <rosparam if="$(arg 4dof_fts_bhand)" command="load" file="$(find wam_moveit_config)/config/4dof_hand_joint_limits.yaml"/>
+    <rosparam if="$(arg 7dof)" command="load" file="$(find wam_moveit_config)/config/7dof_joint_limits.yaml"/>
+    <rosparam if="$(arg 7dof_fts)" command="load" file="$(find wam_moveit_config)/config/7dof_joint_limits.yaml"/>
+    <rosparam if="$(arg 7dof_bhand)" command="load" file="$(find wam_moveit_config)/config/7dof_hand_joint_limits.yaml"/>
+    <rosparam if="$(arg 7dof_fts_bhand)" command="load" file="$(find wam_moveit_config)/config/7dof_hand_joint_limits.yaml"/>
+    <rosparam if="$(arg bhand)" command="load" file="$(find wam_moveit_config)/config/bhand_joint_limits.yaml"/>
+    <rosparam if="$(arg bhand_fts)" command="load" file="$(find wam_moveit_config)/config/bhand_joint_limits.yaml"/>
+  </group>
+
+  <!-- Load default settings for kinematics; these settings are overridden by settings in a node's namespace -->
+  <group ns="$(arg robot_description)_kinematics">
+    <rosparam command="load" file="$(find wam_moveit_config)/config/kinematics.yaml"/>
+  </group>
+
+</launch>
