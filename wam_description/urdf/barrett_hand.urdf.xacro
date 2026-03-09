@@ -8,247 +8,253 @@
     <link name="${prefix}base">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="1.57 0 -3.14" xyz="0.045 -0.0535 0.0148"/>
-	<geometry name="link_bhand_base_visual">
-          <mesh filename="package://wam_description/meshes/bhand_base.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_base.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<base_color />
       </visual>
-      <collision name="bhand_base_collision">
+      <collision>
 	<origin rpy="1.57 0 -3.14" xyz="0.045 -0.0535 0.0148"/>
-	<geometry name="link_bhand_base_collision">
-          <mesh filename="package://wam_description/meshes/bhand_base.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_base.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
+    </link>
     <link name="${prefix}link11">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry name="link_bhand_f11_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link1.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link1.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
-	<material
-            name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+	<material name="">
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry name="link_bhand_f11_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link1.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link1.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
-    #LINK BHAND LINK F21
+    </link>
+
     <link name="${prefix}link21">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry name="link_bhand_f21_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link1.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link1.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<material
             name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry name="link_bhand_f21_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link1.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link1.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
-    #LINK BHAND LINK F12
+    </link>
+
     <link name="${prefix}link12">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry name="link_bhand_f12_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link2.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link2.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
-	<material
-            name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+	<material name="">
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry name="link_bhand_f12_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link2.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link2.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
-    #LINK BHAND LINK F22
+    </link>
+
     <link name="${prefix}link22">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry name="link_bhand_f22_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link2.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link2.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
-	<material
-            name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+	<material name="">
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry name="link_bhand_f22_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link2.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link2.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
-    #LINK BHAND LINK F32
+    </link>
+
     <link name="${prefix}link32">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry name="link_bhand_f32_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link2.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link2.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
-	<material
-            name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+	<material name="">
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry name="link_bhand_f32_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link2.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link2.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
-    #LINK BHAND LINK F13
+    </link>
+
     <link name="${prefix}link13">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry name="link_bhand_f13_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link3.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link3.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
-	<material
-            name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+	<material name="">
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry name="link_bhand_f13_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link3.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link3.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
-    #LINK BHAND LINK F23
+    </link>
+
     <link name="${prefix}link23">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
 	<geometry name="link_bhand_f23_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link3.STL" scale="0.001 0.001 0.001" />
+          <mesh filename="package://wam_description/meshes/bhand_link3.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<material
             name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
 	<geometry name="link_bhand_f23_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link3.STL" scale="0.001 0.001 0.001" />
+          <mesh filename="package://wam_description/meshes/bhand_link3.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
-    
+    </link>
+
     #LINK BHAND LINK F33
     <link name="${prefix}link33">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />  
+	<origin xyz="0 0 0" />
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
 	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry name="link_bhand_f33_visual">
-          <mesh filename="package://wam_description/meshes/bhand_link3.STL" scale="0.001 0.001 0.001" />
+	<geometry>
+          <mesh filename="package://wam_description/meshes/bhand_link3.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<material
             name="">
-          <color
-              rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+          <color rgba="0.796078431372549 0.796078431372549 0.752941176470588
+		       1" />
 	</material>
       </visual>
       <collision>
 	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
 	<geometry name="link_bhand_f33_collision">
-          <mesh filename="package://wam_description/meshes/bhand_link3.STL" scale="0.001 0.001 0.001" />
+          <mesh filename="package://wam_description/meshes/bhand_link3.STL"
+		scale="0.001 0.001 0.001" />
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
-    </link>  
+    </link>
 
     <joint name="${prefix}base_joint" type="fixed">
       <parent link="${parent_link}"/>
       <child link="${prefix}base" />
       <xacro:insert_block name="origin"/>
     </joint>
-    
+
     <joint name="${prefix}j11_joint" type="revolute">
-      <origin xyz="-0.02475 0.0 0.0395" rpy="0.0 0 -1.57079633" /> 
+      <origin xyz="-0.02475 0.0 0.0395" rpy="0.0 0 -1.57079633" />
       <parent link="${prefix}base"/>
       <child link="${prefix}link11" />
       <axis xyz="0 0 -1"/>
@@ -256,9 +262,9 @@
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint>
-    
+
     <joint name="${prefix}j21_joint" type="revolute">
-      <origin xyz="0.02475 0.0 0.0395" rpy="0.0 0.0 -1.57079633" /> 
+      <origin xyz="0.02475 0.0 0.0395" rpy="0.0 0.0 -1.57079633" />
       <parent link="${prefix}base"/>
       <child link="${prefix}link21" />
       <axis xyz="0 0 -1"/>
@@ -266,9 +272,9 @@
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
-    
+
     <joint name="${prefix}j12_joint" type="revolute">
-      <origin xyz="0.050 0.0 0.038" rpy="1.57079633 0 0.0" /> 
+      <origin xyz="0.050 0.0 0.038" rpy="1.57079633 0 0.0" />
       <parent link="${prefix}link11"/>
       <child link="${prefix}link12" />
       <axis xyz="0 0 1"/>
@@ -276,9 +282,9 @@
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
-    
+
     <joint name="${prefix}j22_joint" type="revolute">
-      <origin xyz="0.050 0.0 0.038" rpy="1.57079633 0 0.0" /> 
+      <origin xyz="0.050 0.0 0.038" rpy="1.57079633 0 0.0" />
       <parent link="${prefix}link21"/>
       <child link="${prefix}link22" />
       <axis xyz="0 0 1"/>
@@ -286,9 +292,9 @@
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
-    
+
     <joint name="${prefix}j32_joint" type="revolute">
-      <origin xyz="0.0 0.050 0.0775" rpy="1.57079633 0 1.57079633" /> 
+      <origin xyz="0.0 0.050 0.0775" rpy="1.57079633 0 1.57079633" />
       <parent link="${prefix}base"/>
       <child link="${prefix}link32" />
       <axis xyz="0 0 1"/>
@@ -296,33 +302,36 @@
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
-    
+
     <joint name="${prefix}j13_joint" type="revolute">
-      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" /> 
+      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" />
       <parent link="${prefix}link12"/>
       <child link="${prefix}link13" />
       <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5" lower="0.698131701" upper="2.44346095" />
+      <limit effort="30" velocity="1.5"
+	     lower="0.698131701" upper="2.44346095" />
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
-    
+
     <joint name="${prefix}j23_joint" type="revolute">
-      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" /> 
+      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" />
       <parent link="${prefix}link22"/>
       <child link="${prefix}link23" />
       <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5" lower="0.698131701" upper="2.44346095" />
+      <limit effort="30" velocity="1.5"
+	     lower="0.698131701" upper="2.44346095" />
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
-    
+
     <joint name="${prefix}j33_joint" type="revolute">
-      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" /> 
+      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" />
       <parent link="${prefix}link32"/>
       <child link="${prefix}link33" />
       <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5" lower="0.698131701" upper="2.44346095" />
+      <limit effort="30" velocity="1.5"
+	     lower="0.698131701" upper="2.44346095" />
       <joint_properties damping="100.0" friction="1000.0" />
       <dynamics damping="1000"/>
     </joint >
