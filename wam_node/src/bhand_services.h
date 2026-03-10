@@ -33,7 +33,7 @@ class BhandServices : public rclcpp::Node
     using spread_vel_t  = bhand_msgs::srv::SpreadVelocity;
 
   public:
-    explicit BhandServices(barrett::Hand& hand)
+    explicit BhandServices(barrett::Hand* hand)
         :Node("BhandServices"),
          hand_(hand)
     {
@@ -46,7 +46,7 @@ class BhandServices : public rclcpp::Node
                 (void)request_header;
                 (void)request;
                 RCLCPP_INFO(get_logger(), "Idling Barrett Hand");
-                hand_.idle();
+                hand_->idle();
                 response->success = true;
             };
 
@@ -62,7 +62,7 @@ class BhandServices : public rclcpp::Node
                             "Moving BarrettHand to Finger Positions %.3f, %.3f, %.3f radians",
                             request->position[0], request->position[1],
                             request->position[2]);
-                hand_.trapezoidalMove(
+                hand_->trapezoidalMove(
                     barrett::Hand::jp_type(request->position[0],
                                            request->position[1],
                                            request->position[2],
@@ -82,7 +82,7 @@ class BhandServices : public rclcpp::Node
                 RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand Grasp: %.3f radians",
                             request->position);
-                hand_.trapezoidalMove(
+                hand_->trapezoidalMove(
                     barrett::Hand::jp_type(request->position),
                     barrett::Hand::GRASP, false);
                 response->response = true;
@@ -98,7 +98,7 @@ class BhandServices : public rclcpp::Node
                 (void)request_header;
                 RCLCPP_INFO(get_logger(), "Moving BarrettHand Spread: %.3f radians",
                             request->position);
-                hand_.trapezoidalMove(
+                hand_->trapezoidalMove(
                     barrett::Hand::jp_type(request->position),
                     barrett::Hand::SPREAD, false);
                 response->response = true;
@@ -116,7 +116,7 @@ class BhandServices : public rclcpp::Node
                              "Moving BarrettHand Finger Velocities: %.3f, %.3f, %3.f rad/s",
                              request->velocity[0], request->velocity[1],
                              request->velocity[2]);
-                 hand_.velocityMove(
+                 hand_->velocityMove(
                      barrett::Hand::jv_type(request->velocity[0],
                                             request->velocity[1],
                                             request->velocity[2],
@@ -136,7 +136,7 @@ class BhandServices : public rclcpp::Node
                 RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand Grasp Velocity: %.3f rad/s",
                             request->velocity);
-                hand_.velocityMove(barrett::Hand::jv_type(request->velocity),
+                hand_->velocityMove(barrett::Hand::jv_type(request->velocity),
                                    barrett::Hand::GRASP);
                 response->response = true;
             };
@@ -152,8 +152,8 @@ class BhandServices : public rclcpp::Node
                 RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand Spread Velocity: %.3f rad/s",
                             request->velocity);
-                hand_.velocityMove(barrett::Hand::jv_type(request->velocity),
-                                   barrett::Hand::SPREAD);
+                hand_->velocityMove(barrett::Hand::jv_type(request->velocity),
+                                    barrett::Hand::SPREAD);
                 response->response = true;
             };
 
@@ -166,7 +166,7 @@ class BhandServices : public rclcpp::Node
                 (void)request_header;
                 (void)request;
                 RCLCPP_INFO(get_logger(), "Opening the BarrettHand Grasp");
-                hand_.open(barrett::Hand::GRASP, false);
+                hand_->open(barrett::Hand::GRASP, false);
                 response->success = true;
             };
 
@@ -178,7 +178,7 @@ class BhandServices : public rclcpp::Node
                 (void)request_header;
                 (void) request;
                 RCLCPP_INFO(get_logger(), "Closing the BarrettHand Grasp");
-                hand_.close(barrett::Hand::GRASP, false);
+                hand_->close(barrett::Hand::GRASP, false);
                 response->success = true;
             };
 
@@ -191,7 +191,7 @@ class BhandServices : public rclcpp::Node
                 (void)request_header;
                 (void) request;
                 RCLCPP_INFO(get_logger(), "Opening the BarrettHand Spread");
-                hand_.open(barrett::Hand::SPREAD, false);
+                hand_->open(barrett::Hand::SPREAD, false);
                 response->success = true;
             };
 
@@ -204,7 +204,7 @@ class BhandServices : public rclcpp::Node
                 (void)request_header;
                 (void) request;
                 RCLCPP_INFO(get_logger(), "Closing the BarrettHand Spread");
-                hand_.close(barrett::Hand::SPREAD, false);
+                hand_->close(barrett::Hand::SPREAD, false);
                 response->success = true;
             };
 
@@ -238,18 +238,18 @@ class BhandServices : public rclcpp::Node
                                                       close_spread_cb);
     }
 
-  protected:
-    barrett::Hand&      hand_;
-    srv_p<finger_pos_t> finger_position_srv_;
-    srv_p<grasp_pos_t>  grasp_position_srv_;
-    srv_p<spread_pos_t> spread_position_srv_;
-    srv_p<finger_vel_t> finger_velocity_srv_;
-    srv_p<grasp_vel_t>  grasp_velocity_srv_;
-    srv_p<spread_vel_t> spread_velocity_srv_;
-    srv_p<trigger_t>    idle_srv_;
-    srv_p<trigger_t>    open_grasp_srv_;
-    srv_p<trigger_t>    close_grasp_srv_;
-    srv_p<trigger_t>    open_spread_srv_;
-    srv_p<trigger_t>    close_spread_srv_;
+  private:
+    barrett::Hand* const        hand_;
+    srv_p<finger_pos_t>         finger_position_srv_;
+    srv_p<grasp_pos_t>          grasp_position_srv_;
+    srv_p<spread_pos_t>         spread_position_srv_;
+    srv_p<finger_vel_t>         finger_velocity_srv_;
+    srv_p<grasp_vel_t>          grasp_velocity_srv_;
+    srv_p<spread_vel_t>         spread_velocity_srv_;
+    srv_p<trigger_t>            idle_srv_;
+    srv_p<trigger_t>            open_grasp_srv_;
+    srv_p<trigger_t>            close_grasp_srv_;
+    srv_p<trigger_t>            open_spread_srv_;
+    srv_p<trigger_t>            close_spread_srv_;
 };
 }       // namespace wam_node

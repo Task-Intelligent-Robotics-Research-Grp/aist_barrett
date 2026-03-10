@@ -47,7 +47,7 @@ class WamSubscribers : public rclcpp::Node
     void startLogging();
 
     explicit
-    WamSubscribers(barrett::systems::Wam<DOF>& wam,
+    WamSubscribers(barrett::systems::Wam<DOF>* wam,
                    barrett::ProductManager& pm)
         :Node("WamSubscribers"),
          wam_(wam),
@@ -114,17 +114,17 @@ class WamSubscribers : public rclcpp::Node
     barrett::math::Vector<3>::type toRPY(Eigen::Quaterniond inquat);
 
   private:
-    barrett::systems::Wam<DOF>& wam_;
-    barrett::ProductManager& pm_;
+    barrett::systems::Wam<DOF>* const   wam_;
+    barrett::ProductManager&            pm_;
 
-    sub_p<rt_joint_pos_t> rt_joint_position_sub_;
-    sub_p<rt_linear_angular_vel_t> rt_linear_angular_velocity_sub_;
-    sub_p<rt_angular_vel_t> rt_angular_velocity_sub_;
-    sub_p<rt_linear_vel_t> rt_linear_velocity_sub_;
-    sub_p<rt_cart_pos_t> rt_cart_position_sub_;
-    sub_p<rt_cart_pose_t> rt_cart_pose_sub_;
-    sub_p<rt_cart_orientation_t> rt_cart_orientation_sub_;
-    sub_p<rt_joint_vel_t> rt_joint_velocity_sub_;
+    sub_p<rt_joint_pos_t>               rt_joint_position_sub_;
+    sub_p<rt_linear_angular_vel_t>      rt_linear_angular_velocity_sub_;
+    sub_p<rt_angular_vel_t>             rt_angular_velocity_sub_;
+    sub_p<rt_linear_vel_t>              rt_linear_velocity_sub_;
+    sub_p<rt_cart_pos_t>                rt_cart_position_sub_;
+    sub_p<rt_cart_pose_t>               rt_cart_pose_sub_;
+    sub_p<rt_cart_orientation_t>        rt_cart_orientation_sub_;
+    sub_p<rt_joint_vel_t>               rt_joint_velocity_sub_;
 
   //RT Status indicators
     bool rt_joint_position_status_;
@@ -213,8 +213,8 @@ WamSubscribers<DOF>::rtJointPositionCb(const ptr<rt_joint_pos_t> msg)
     if (!rt_joint_position_status_)
     {
         rt_joint_position_status_ = true;
-        jp_track_.setValue(wam_.getJointPositions());
-        wam_.trackReferenceSignal(jp_track_.output);
+        jp_track_.setValue(wam_->getJointPositions());
+        wam_->trackReferenceSignal(jp_track_.output);
       //Used for logging
       /*     logging = true;
              std::thread thread(&WamSubscribers::startLogging,this);
@@ -261,8 +261,8 @@ WamSubscribers<DOF>::rtLinearAngularVelocityCb(
         start_rpy(1) = 0;
         start_rpy(2) = 0;
         angular_vel_direction_track_.setValue(start_rpy);
-        current_cp_track_.setValue(wam_.getToolPosition());
-        current_rpy_track_.setValue(toRPY(wam_.getToolOrientation()));
+        current_cp_track_.setValue(wam_->getToolPosition());
+        current_rpy_track_.setValue(toRPY(wam_->getToolOrientation()));
 
       /* Set ramp slope to goal linear velocity magnitude
          multiply output of ramp with linear velocity direction to get a linear
@@ -309,7 +309,7 @@ WamSubscribers<DOF>::rtLinearAngularVelocityCb(
         ramp1_.setOutput(0.0);
         ramp_.start();
         ramp1_.start();
-        wam_.trackReferenceSignal(rt_pose_cmd_.output);
+        wam_->trackReferenceSignal(rt_pose_cmd_.output);
     }
     else if (rt_linear_angular_velocity_status_)
     {
@@ -341,9 +341,9 @@ WamSubscribers<DOF>::rtLinearAngularVelocityCb(
         linear_vel_direction_track_.setValue(rt_linear_velocity_cmd_);
         angular_vel_direction_track_.setValue(rt_angular_velocity_cmd_);
         current_cp_track_.setValue(
-            wam_.tpoTpController.referenceInput.getValue());
+            wam_->tpoTpController.referenceInput.getValue());
         current_rpy_track_.setValue(
-            toRPY(wam_.tpoToController.referenceInput.getValue()));
+            toRPY(wam_->tpoToController.referenceInput.getValue()));
     }
     rt_linear_angular_velocity_msg_time_ =  rclcpp::Clock().now();
 }
@@ -359,8 +359,8 @@ WamSubscribers<DOF>::rtAngularVelocityCb(const ptr<rt_angular_vel_t> msg)
             barrett::math::Vector<3>::type(0, 0, 0));
 
       //get current RPY
-        current_rpy_track_.setValue(toRPY(wam_.getToolOrientation()));
-        current_cp_track_.setValue(wam_.getToolPosition());
+        current_rpy_track_.setValue(toRPY(wam_->getToolOrientation()));
+        current_cp_track_.setValue(wam_->getToolPosition());
 
       /* Set ramp1_ slope to goal angular velocity magnitude
          multiply output of ramp with angular velocity direction to get a angular velocity vector.*/
@@ -386,7 +386,7 @@ WamSubscribers<DOF>::rtAngularVelocityCb(const ptr<rt_angular_vel_t> msg)
         ramp_.stop();
         ramp_.setOutput(0.0);
         ramp_.start();
-        wam_.trackReferenceSignal(rt_pose_cmd_.output);
+        wam_->trackReferenceSignal(rt_pose_cmd_.output);
     }
     else if (rt_angular_velocity_status_)
     {
@@ -406,7 +406,7 @@ WamSubscribers<DOF>::rtAngularVelocityCb(const ptr<rt_angular_vel_t> msg)
         ramp_.setSlope(angular_velocity_mag_);
         angular_vel_direction_track_.setValue(rt_angular_velocity_cmd_);
         current_rpy_track_.setValue(
-            toRPY(wam_.tpoToController.referenceInput.getValue()));
+            toRPY(wam_->tpoToController.referenceInput.getValue()));
     }
     rt_angular_velocity_msg_time_ =  rclcpp::Clock().now();
 }
@@ -418,8 +418,8 @@ WamSubscribers<DOF>::rtLinearVelocityCb(const ptr<rt_linear_vel_t> msg)
     {
         rt_linear_velocity_status_ = true;
         linear_vel_direction_track_.setValue(cp_type(0, 0, 0));
-        current_cp_track_.setValue(wam_.getToolPosition());
-        current_quat_track_.setValue(wam_.getToolOrientation());
+        current_cp_track_.setValue(wam_->getToolPosition());
+        current_quat_track_.setValue(wam_->getToolOrientation());
 
       /* Set ramp slope to goal linear velocity magnitude
          multiply output of ramp with linear velocity direction to get a linear velocity vector.*/
@@ -441,7 +441,7 @@ WamSubscribers<DOF>::rtLinearVelocityCb(const ptr<rt_linear_vel_t> msg)
         ramp_.stop();
         ramp_.setOutput(0.0);
         ramp_.start();
-        wam_.trackReferenceSignal(rt_pose_cmd_.output);
+        wam_->trackReferenceSignal(rt_pose_cmd_.output);
     }
     else if (rt_linear_velocity_status_)
     {
@@ -461,7 +461,7 @@ WamSubscribers<DOF>::rtLinearVelocityCb(const ptr<rt_linear_vel_t> msg)
         ramp_.setSlope(linear_velocity_mag_);
         linear_vel_direction_track_.setValue(rt_linear_velocity_cmd_);
         current_cp_track_.setValue(
-            wam_.tpoTpController.referenceInput.getValue());
+            wam_->tpoTpController.referenceInput.getValue());
     }
     rt_linear_velocity_msg_time_ =  rclcpp::Clock().now();
 }
@@ -474,8 +474,8 @@ WamSubscribers<DOF>::rtCartPositionCb(const ptr<rt_cart_pos_t> msg)
         rt_cart_position_status_ = true;
 
       //Start with goal as current position
-        cp_cmd_track_.setValue(wam_.getToolPosition());
-        current_quat_track_.setValue(wam_.getToolOrientation());
+        cp_cmd_track_.setValue(wam_->getToolPosition());
+        current_quat_track_.setValue(wam_->getToolOrientation());
 
       //set the value of rate limiter to subscribed rate limits, and limit goal CP by that.
         cartesian_rate_limiter_.setLimit(rt_cartesian_position_rate_limits_);
@@ -485,7 +485,7 @@ WamSubscribers<DOF>::rtCartPositionCb(const ptr<rt_cart_pos_t> msg)
                                        rt_pose_cmd_.getInput<0>());
         barrett::systems::forceConnect(current_quat_track_.output,
                                        rt_pose_cmd_.getInput<1>());
-        wam_.trackReferenceSignal(rt_pose_cmd_.output);
+        wam_->trackReferenceSignal(rt_pose_cmd_.output);
     }
     else if (rt_cart_position_status_)
     {
@@ -518,8 +518,8 @@ WamSubscribers<DOF>::rtCartPoseCb(const ptr<rt_cart_pose_t> msg)
         rt_cart_pose_status_ = true;
 
       //goal CP and goal orientation
-        cp_cmd_track_.setValue(wam_.getToolPosition());
-        quat_cmd_track_.setValue(wam_.getToolOrientation());
+        cp_cmd_track_.setValue(wam_->getToolPosition());
+        quat_cmd_track_.setValue(wam_->getToolOrientation());
 
       //limit rates by subscribed limits
         barrett::systems::forceConnect(cp_cmd_track_.output,
@@ -528,7 +528,7 @@ WamSubscribers<DOF>::rtCartPoseCb(const ptr<rt_cart_pose_t> msg)
                                        rt_pose_cmd_.getInput<0>());
         barrett::systems::forceConnect(quat_cmd_track_.output,
                                        rt_pose_cmd_.getInput<1>()); //no connection to RL
-        wam_.trackReferenceSignal(rt_pose_cmd_.output);
+        wam_->trackReferenceSignal(rt_pose_cmd_.output);
         cartesian_rate_limiter_.setLimit(rt_cartesian_position_rate_limits_);
     }
     else if (rt_cart_pose_status_)
@@ -582,15 +582,15 @@ WamSubscribers<DOF>::rtCartOrientationCb(const ptr<rt_cart_orientation_t> msg)
         rt_cart_orientation_status_ = true;
 
       //goal orientation
-        quat_cmd_track_.setValue(wam_.getToolOrientation());
-        current_cp_track_.setValue(wam_.getToolPosition());
+        quat_cmd_track_.setValue(wam_->getToolOrientation());
+        current_cp_track_.setValue(wam_->getToolPosition());
 
       //no rate limiter for orientation.
         barrett::systems::forceConnect(current_cp_track_.output,
                                        rt_pose_cmd_.getInput<0>());
         barrett::systems::forceConnect(quat_cmd_track_.output,
                                        rt_pose_cmd_.getInput<1>()); //no connection to RL
-        wam_.trackReferenceSignal(rt_pose_cmd_.output);
+        wam_->trackReferenceSignal(rt_pose_cmd_.output);
     }
     else if (rt_cart_orientation_status_)
     {
@@ -628,7 +628,7 @@ WamSubscribers<DOF>::rtJointVelocityCb(const ptr<rt_joint_vel_t> msg)
             jv_start(i) = 0;
         }
         jv_track_.setValue(jv_start);
-        wam_.trackReferenceSignal(jv_track_.output);
+        wam_->trackReferenceSignal(jv_track_.output);
     }
     else
     {
@@ -650,8 +650,8 @@ WamSubscribers<DOF>::startLogging()
                                    tg.template getInput<1>());
     barrett::systems::forceConnect(joint_rate_limiter_.output,
                                    tg.template getInput<2>());
-    barrett::systems::forceConnect(wam_.jpOutput, tg.template getInput<3>());
-    barrett::systems::forceConnect(wam_.jvOutput, tg.template getInput<4>());
+    barrett::systems::forceConnect(wam_->jpOutput, tg.template getInput<3>());
+    barrett::systems::forceConnect(wam_->jvOutput, tg.template getInput<4>());
     typedef boost::tuple<double, jp_type, jp_type, jp_type, jv_type> tuple_type;
     const size_t PERIOD_MULTIPLIER = 1;
     char tmpFile[] = "/tmp/btXXXXXX";
@@ -726,7 +726,7 @@ WamSubscribers<DOF>::updateRT()
             = rt_cart_orientation_status_
             = rt_joint_velocity_status_
             = false;
-        wam_.moveTo(wam_.getJointPositions());
+        wam_->moveTo(wam_->getJointPositions());
         logging = false;
         RCLCPP_ERROR(get_logger(),"RT Control timed-out");
     }

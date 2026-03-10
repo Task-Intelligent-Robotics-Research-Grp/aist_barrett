@@ -18,12 +18,12 @@ class WamServices : public rclcpp::Node
     BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
 
     template <class SRV>
-    using srv_p         = typename rclcpp::Service<SRV>::SharedPtr;
+    using srv_p = typename rclcpp::Service<SRV>::SharedPtr;
     template <class SRV>
-    using req_p         = std::shared_ptr<typename SRV::Request>;
+    using req_p = std::shared_ptr<typename SRV::Request>;
     template <class SRV>
-    using res_p         = std::shared_ptr<typename SRV::Response>;
-    using hdr_p         = std::shared_ptr<rmw_request_id_t>;
+    using res_p = std::shared_ptr<typename SRV::Response>;
+    using hdr_p = std::shared_ptr<rmw_request_id_t>;
 
     using trigger_t               = std_srvs::srv::Trigger;
     using set_bool_t              = std_srvs::srv::SetBool;
@@ -35,11 +35,10 @@ class WamServices : public rclcpp::Node
 
   public:
     explicit
-    WamServices(barrett::systems::Wam<DOF> &wam,
-                barrett::ProductManager &pm, barrett::Hand* hand,
-                bool found_hand)
+    WamServices(barrett::systems::Wam<DOF>* const wam,
+                barrett::ProductManager& pm, barrett::Hand* hand)
         :Node("WamServices"),
-         wam_(wam), pm_(pm), hand_(hand), found_hand_(found_hand)
+         wam_(wam), pm_(pm), hand_(hand)
     {
         auto move_home_cb =
             [this](const hdr_p request_header,
@@ -49,12 +48,12 @@ class WamServices : public rclcpp::Node
                 (void)request_header;
                 (void)request;
                 RCLCPP_INFO(get_logger(), "Moving WAM Home");
-                if (found_hand_)
+                if (hand_)
                 {
                     hand_->open(barrett::Hand::GRASP, true);
                     hand_->close(barrett::Hand::SPREAD, true);
                 }
-                wam_.moveHome();
+                wam_->moveHome();
                 response->success = true;
             };
 
@@ -67,14 +66,14 @@ class WamServices : public rclcpp::Node
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Gravity Compensation turned on");
-                    wam_.gravityCompensate();
+                    wam_->gravityCompensate();
                     response->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Gravity Compensation turned off");
-                    wam_.gravityCompensate(false);
+                    wam_->gravityCompensate(false);
                     response->success = true;
                 }
             };
@@ -86,7 +85,7 @@ class WamServices : public rclcpp::Node
                 (void)request_header;
                 (void)request;
                 RCLCPP_INFO(get_logger(), "Idling WAM");
-                wam_.idle();
+                wam_->idle();
                 response->success = true;
             };
 
@@ -98,14 +97,14 @@ class WamServices : public rclcpp::Node
                 if (request->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Tool Position");
-                    wam_.moveTo(wam_.getToolPosition(), false);
+                    wam_->moveTo(wam_->getToolPosition(), false);
                     response->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Releasing WAM Tool Position hold");
-                    wam_.idle();
+                    wam_->idle();
                     response->success = true;
                 }
             };
@@ -118,14 +117,14 @@ class WamServices : public rclcpp::Node
                 if (request->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Joint Positions");
-                    wam_.moveTo(wam_.getJointPositions(), false);
+                    wam_->moveTo(wam_->getJointPositions(), false);
                     response->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Releasing WAM Joint Positions hold");
-                    wam_.idle();
+                    wam_->idle();
                     response->success = true;
                 }
             };
@@ -138,14 +137,14 @@ class WamServices : public rclcpp::Node
                 if (request->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Tool Orientation");
-                    wam_.moveTo(wam_.getToolOrientation(), false);
+                    wam_->moveTo(wam_->getToolOrientation(), false);
                     response->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Releasing WAM Tool Orientation hold");
-                    wam_.idle();
+                    wam_->idle();
                     response->success = true;
                 }
             };
@@ -158,13 +157,13 @@ class WamServices : public rclcpp::Node
                 if (request->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Tool Pose");
-                    wam_.moveTo(wam_.getToolPose(), false);
+                    wam_->moveTo(wam_->getToolPose(), false);
                     response->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(), "Releasing WAM Tool Pose hold");
-                    wam_.idle();
+                    wam_->idle();
                     response->success = true;
                 }
             };
@@ -190,7 +189,7 @@ class WamServices : public rclcpp::Node
                     {
                         jp(i) = request->joint_state.position[i];
                     }
-                    wam_.moveTo(jp);
+                    wam_->moveTo(jp);
                     response->response = true;
                 }
             };
@@ -207,7 +206,7 @@ class WamServices : public rclcpp::Node
                 cp << request->position.x,
                       request->position.y,
                       request->position.z;
-                wam_.moveTo(cp, false);
+                wam_->moveTo(cp, false);
                 response->response = true;
             };
 
@@ -224,7 +223,7 @@ class WamServices : public rclcpp::Node
                 goal_ortn.y() = request->orientation.y;
                 goal_ortn.z() = request->orientation.z;
                 goal_ortn.w() = request->orientation.w;
-                wam_.moveTo(goal_ortn, false);
+                wam_->moveTo(goal_ortn, false);
                 response->response = true;
             };
 
@@ -245,7 +244,7 @@ class WamServices : public rclcpp::Node
                 pose.get<1>().y() = request->pose.orientation.y;
                 pose.get<1>().z() = request->pose.orientation.z;
                 pose.get<1>().w() = request->pose.orientation.w;
-                wam_.moveTo(pose, false);
+                wam_->moveTo(pose, false);
                 response->response = true;
             };
 
@@ -296,21 +295,20 @@ class WamServices : public rclcpp::Node
     }
 
   private:
-    barrett::systems::Wam<DOF>&    wam_;
-    barrett::ProductManager&       pm_;
-    barrett::Hand*                 hand_;
-    bool                           found_hand_;
-    srv_p<trigger_t>               move_to_home_srv_;
-    srv_p<set_bool_t>              gravity_comp_srv_;
-    srv_p<trigger_t>               idle_srv_;
-    srv_p<set_bool_t>              hold_joint_position_srv_;
-    srv_p<set_bool_t>              hold_cart_position_srv_;
-    srv_p<set_bool_t>              hold_cart_orientation_srv_;
-    srv_p<set_bool_t>              hold_cart_pose_srv_;
-    srv_p<joint_move_t>            joint_move_srv_;
-    srv_p<cart_position_move_t>    cart_position_move_srv_;
-    srv_p<cart_orientation_move_t> cart_orientation_move_srv_;
-    srv_p<cart_pose_move_t>        cart_pose_move_srv_;
-    srv_p<velocity_limit_t>        set_velocity_limit_srv_;
+    barrett::systems::Wam<DOF>* const   wam_;
+    barrett::ProductManager&            pm_;
+    barrett::Hand* const                hand_;
+    srv_p<trigger_t>                    move_to_home_srv_;
+    srv_p<set_bool_t>                   gravity_comp_srv_;
+    srv_p<trigger_t>                    idle_srv_;
+    srv_p<set_bool_t>                   hold_joint_position_srv_;
+    srv_p<set_bool_t>                   hold_cart_position_srv_;
+    srv_p<set_bool_t>                   hold_cart_orientation_srv_;
+    srv_p<set_bool_t>                   hold_cart_pose_srv_;
+    srv_p<joint_move_t>                 joint_move_srv_;
+    srv_p<cart_position_move_t>         cart_position_move_srv_;
+    srv_p<cart_orientation_move_t>      cart_orientation_move_srv_;
+    srv_p<cart_pose_move_t>             cart_pose_move_srv_;
+    srv_p<velocity_limit_t>             set_velocity_limit_srv_;
 };
 }
