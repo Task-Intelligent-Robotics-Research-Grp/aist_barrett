@@ -42,8 +42,6 @@ class WamPublishers : public rclcpp::Node
         :Node("WamPublishers"), wam_(wam), hand_(hand), first_publish_(true),
          joint_state_pub_(
              create_publisher<joint_state_t>("/joint_states", 100)),
-         joint_velocity_pub_(
-             create_publisher<joint_state_t>("/wam/jointVelocity", 100)),
          tool_pose_pub_(
              create_publisher<pose_t>("/wam/ToolPose", 100)),
          tool_velocity_pub_(
@@ -54,8 +52,8 @@ class WamPublishers : public rclcpp::Node
         const size_t    hand_dof = (hand_ ? kBhandJointNames.size() : 0);
 
         joint_state_.position.resize(DOF + hand_dof);
+        joint_state_.velocity.resize(DOF + hand_dof);
         joint_state_.effort.resize(DOF + hand_dof);
-        joint_velocity_.velocity.resize(DOF + hand_dof);
         joint_state_.name.resize(DOF + hand_dof);
         for (size_t i = 0; i < DOF; ++i)
             joint_state_.name.at(i) = "q" + std::to_string(i + 1);
@@ -63,21 +61,21 @@ class WamPublishers : public rclcpp::Node
             joint_state_.name.at(i) = kBhandJointNames.at(i - DOF);
     }
 
-    void publishJointState();
-    void publishCartPose();
-    void publishToolVelocity();
-    void publishJointVelocities();
+    void        publishJointState();
+    void        publishCartPose();
+    void        publishToolVelocity();
+    void        publishJointVelocities();
 
-  protected:
+  private:
   /** Returns Tool Velocity.
    * Tool Velocity =
    * (current_tool_pose_-previous_tool_pose_)/(current_velocity_pub_time_-prev_velocity_pub_time_)
    */
-    twist_t calcToolVelocity();
+    twist_t     calcToolVelocity();
   // Simple Function for converting Quaternion to RPY
     vector3_t   toRPY(Eigen::Quaterniond inquat);
 
-  protected:
+  private:
     barrett::systems::Wam<DOF>* const   wam_;
     barrett::Hand* const                hand_;
     bool                                first_publish_;
@@ -85,7 +83,6 @@ class WamPublishers : public rclcpp::Node
     // ct_type ct_;
 
     const pub_p<joint_state_t>  joint_state_pub_;
-    const pub_p<joint_state_t>  joint_velocity_pub_;
     const pub_p<pose_t>         tool_pose_pub_;
     const pub_p<twist_t>        tool_velocity_pub_;
     const pub_p<bool_t>         trajectory_status_pub_;
@@ -93,9 +90,6 @@ class WamPublishers : public rclcpp::Node
   // Libbarrett Data Types
     pose_type                   current_tool_pose_;
     pose_type                   prev_tool_pose_;
-    jp_type                     current_joint_position_;
-    jv_type                     current_joint_velocity_;
-    jt_type                     current_joint_torque_;
 
   // ROS2 Data Types
     rclcpp::Time                current_velocity_pub_time_,
@@ -120,52 +114,43 @@ WamPublishers<DOF>::toRPY(Eigen::Quaterniond inquat)
 template <size_t DOF> void
 WamPublishers<DOF>::publishJointState()
 {
-    current_joint_position_ = wam_->getJointPositions();
-    current_joint_torque_   = wam_->getJointTorques();
-    for (int i = 0; i < (int)DOF; i++)
-    {
-        joint_state_.position.at(i) = current_joint_position_(i);
-        joint_state_.effort.at(i) = current_joint_torque_(i);
-    }
-
-  // If hand is present, publish hand joint states
-    if (hand_)
-    {
-        hand_->update();
-        barrett::Hand::jp_type hi = hand_->getInnerLinkPosition();  // get finger positions information
-        barrett::Hand::jp_type ho = hand_->getOuterLinkPosition();
-        for (size_t i = 0; i < 3; ++i)
-            joint_state_.position[i + 2 + DOF] = hi[i];
-        for (size_t i = 0; i < 3; ++i)
-            joint_state_.position[i + 5 + DOF] = ho[i];
-        joint_state_.position[DOF]   =  hi[3];
-        joint_state_.position[DOF+1] = -hi[3];
-    }
-    joint_state_.header.stamp = rclcpp::Node::now();
-    joint_state_pub_->publish(joint_state_);
-}
-
-template <size_t DOF> void
-WamPublishers<DOF>::publishJointVelocities()
-{
-    current_joint_velocity_ = wam_->getJointVelocities();
-    bool_t trajectory_status_msg;
-    int no_zeros = 0;
+    int         no_zeros = 0;
+    const auto& current_joint_position = wam_->getJointPositions();
+    const auto& current_joint_velocity = wam_->getJointVelocities();
+    const auto& current_joint_torque   = wam_->getJointTorques();
     for (size_t i = 0; i < DOF; ++i)
     {
-        joint_velocity_.velocity.at(i) = current_joint_velocity_(i);
-        if ((joint_velocity_.velocity.at(i) >= -0.07) &&
-            (joint_velocity_.velocity.at(i) <=  0.07))
+        joint_state_.position.at(i) = current_joint_position(i);
+        joint_state_.velocity.at(i) = current_joint_velocity(i);
+        joint_state_.effort.at(i)   = current_joint_torque(i);
+
+        if ((joint_state_.velocity.at(i) >= -0.07) &&
+            (joint_state_.velocity.at(i) <=  0.07))
         {
             ++no_zeros;
         }
     }
 
-    trajectory_status_msg.data = (no_zeros != DOF);
-    trajectory_status_pub_->publish(trajectory_status_msg);
+    bool_t      trajectory_status;
+    trajectory_status.data = (no_zeros != DOF);
+    trajectory_status_pub_->publish(trajectory_status);
 
-    joint_velocity_.header.stamp = rclcpp::Node::now();
-    joint_velocity_pub_->publish(joint_velocity_);
+  // If hand is present, publish hand joint states
+    if (hand_)
+    {
+        hand_->update();
+        const auto&     hi = hand_->getInnerLinkPosition();
+        const auto&     ho = hand_->getOuterLinkPosition();
+        for (size_t i = 0; i < 3; ++i)
+        {
+            joint_state_.position[i + 2 + DOF] = hi[i];
+            joint_state_.position[i + 5 + DOF] = ho[i];
+        }
+        joint_state_.position[DOF]   =  hi[3];
+        joint_state_.position[DOF+1] = -hi[3];
+    }
+    joint_state_.header.stamp = rclcpp::Node::now();
+    joint_state_pub_->publish(joint_state_);
 }
 
 template <size_t DOF> void

@@ -18,12 +18,11 @@ class WamServices : public rclcpp::Node
     BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
 
     template <class SRV>
-    using srv_p = typename rclcpp::Service<SRV>::SharedPtr;
+    using srv_p  = typename rclcpp::Service<SRV>::SharedPtr;
     template <class SRV>
-    using req_p = std::shared_ptr<typename SRV::Request>;
+    using req_cp = typename SRV::Request::ConstSharedPtr;
     template <class SRV>
-    using res_p = std::shared_ptr<typename SRV::Response>;
-    using hdr_p = std::shared_ptr<rmw_request_id_t>;
+    using res_p  = typename SRV::Response::SharedPtr;
 
     using trigger_t               = std_srvs::srv::Trigger;
     using set_bool_t              = std_srvs::srv::SetBool;
@@ -41,12 +40,9 @@ class WamServices : public rclcpp::Node
          wam_(wam), pm_(pm), hand_(hand)
     {
         auto move_home_cb =
-            [this](const hdr_p request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
+            [this](req_cp<trigger_t>, res_p<trigger_t> res)
             {
               /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void)request;
                 RCLCPP_INFO(get_logger(), "Moving WAM Home");
                 if (hand_)
                 {
@@ -54,132 +50,116 @@ class WamServices : public rclcpp::Node
                     hand_->close(barrett::Hand::SPREAD, true);
                 }
                 wam_->moveHome();
-                response->success = true;
+                res->success = true;
             };
 
         auto gravity_compensate_cb =
-            [this](const hdr_p request_header,
-                   const req_p<set_bool_t> request, res_p<set_bool_t> response)
+            [this](req_cp<set_bool_t> req, res_p<set_bool_t> res)
             {
-                (void)request_header;
-                if (request->data == true)
+                if (req->data == true)
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Gravity Compensation turned on");
                     wam_->gravityCompensate();
-                    response->success = true;
+                    res->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Gravity Compensation turned off");
                     wam_->gravityCompensate(false);
-                    response->success = true;
+                    res->success = true;
                 }
             };
 
         auto idle_cb =
-            [this](const hdr_p request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
+            [this](req_cp<trigger_t>, res_p<trigger_t> res)
             {
-                (void)request_header;
-                (void)request;
                 RCLCPP_INFO(get_logger(), "Idling WAM");
                 wam_->idle();
-                response->success = true;
+                res->success = true;
             };
 
         auto hold_cart_position_cb =
-            [this](const hdr_p request_header,
-                   const req_p<set_bool_t> request, res_p<set_bool_t> response)
+            [this](req_cp<set_bool_t> req, res_p<set_bool_t> res)
             {
-                (void)request_header;
-                if (request->data == true)
+                if (req->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Tool Position");
                     wam_->moveTo(wam_->getToolPosition(), false);
-                    response->success = true;
+                    res->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Releasing WAM Tool Position hold");
                     wam_->idle();
-                    response->success = true;
+                    res->success = true;
                 }
             };
 
         auto hold_joint_positioin_cb =
-            [this](const hdr_p request_header,
-                   const req_p<set_bool_t> request, res_p<set_bool_t> response)
+            [this](req_cp<set_bool_t> req, res_p<set_bool_t> res)
             {
-                (void)request_header;
-                if (request->data == true)
+                if (req->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Joint Positions");
                     wam_->moveTo(wam_->getJointPositions(), false);
-                    response->success = true;
+                    res->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Releasing WAM Joint Positions hold");
                     wam_->idle();
-                    response->success = true;
+                    res->success = true;
                 }
             };
 
         auto hold_cart_orientation_ =
-            [this](const hdr_p request_header,
-                   const req_p<set_bool_t> request, res_p<set_bool_t> response)
+            [this](req_cp<set_bool_t> req, res_p<set_bool_t> res)
             {
-                (void)request_header;
-                if (request->data == true)
+                if (req->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Tool Orientation");
                     wam_->moveTo(wam_->getToolOrientation(), false);
-                    response->success = true;
+                    res->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(),
                                 "Releasing WAM Tool Orientation hold");
                     wam_->idle();
-                    response->success = true;
+                    res->success = true;
                 }
             };
 
         auto hold_cart_pose_ =
-            [this](const hdr_p request_header,
-                   const req_p<set_bool_t> request, res_p<set_bool_t> response)
+            [this](req_cp<set_bool_t> req, res_p<set_bool_t> res)
             {
-                (void)request_header;
-                if (request->data == true)
+                if (req->data == true)
                 {
                     RCLCPP_INFO(get_logger(), "Holding WAM Tool Pose");
                     wam_->moveTo(wam_->getToolPose(), false);
-                    response->success = true;
+                    res->success = true;
                 }
                 else
                 {
                     RCLCPP_INFO(get_logger(), "Releasing WAM Tool Pose hold");
                     wam_->idle();
-                    response->success = true;
+                    res->success = true;
                 }
             };
 
         auto joint_move_cb =
-            [this](const hdr_p request_header,
-                   const req_p<joint_move_t> request,
-                   res_p<joint_move_t> response)
+            [this](req_cp<joint_move_t> req, res_p<joint_move_t> res)
             {
-                (void)request_header;
                 jp_type jp;
-                if (DOF != request->joint_state.position.size())
+                if (DOF != req->joint_state.position.size())
                 {
                     RCLCPP_ERROR(get_logger(),
                                  "Invalid Command. Please enter %lu Joint Positions", DOF);
-                    response->response = false; //notify client that move not initialized
+                    res->response = false; //notify client that move not initialized
                 }
                 else
                 {
@@ -187,76 +167,65 @@ class WamServices : public rclcpp::Node
                                 "Moving WAM to commanded Joint Positions");
                     for (int i = 0; i < (int)DOF; i++)
                     {
-                        jp(i) = request->joint_state.position[i];
+                        jp(i) = req->joint_state.position[i];
                     }
                     wam_->moveTo(jp);
-                    response->response = true;
+                    res->response = true;
                 }
             };
 
         auto cart_position_move_cb =
-            [this](const hdr_p request_header,
-                   const req_p<cart_position_move_t> request,
-                   res_p<cart_position_move_t> response)
+            [this](req_cp<cart_position_move_t> req,
+                   res_p<cart_position_move_t>  res)
             {
-                (void)request_header;
                 cp_type cp;
                 RCLCPP_INFO(get_logger(),
                             "Moving WAM to commanded Cartesian Positions");
-                cp << request->position.x,
-                      request->position.y,
-                      request->position.z;
+                cp << req->position.x,
+                      req->position.y,
+                      req->position.z;
                 wam_->moveTo(cp, false);
-                response->response = true;
+                res->response = true;
             };
 
         auto cart_orientation_move_cb =
-            [this](const hdr_p request_header,
-                   const req_p<cart_orientation_move_t> request,
-                   res_p<cart_orientation_move_t> response)
+            [this](req_cp<cart_orientation_move_t> req,
+                   res_p<cart_orientation_move_t>  res)
             {
-                (void)request_header;
                 Eigen::Quaterniond goal_ortn;
                 RCLCPP_INFO(get_logger(),
                             "Moving WAM to commanded Cartesian Orientation");
-                goal_ortn.x() = request->orientation.x;
-                goal_ortn.y() = request->orientation.y;
-                goal_ortn.z() = request->orientation.z;
-                goal_ortn.w() = request->orientation.w;
+                goal_ortn.x() = req->orientation.x;
+                goal_ortn.y() = req->orientation.y;
+                goal_ortn.z() = req->orientation.z;
+                goal_ortn.w() = req->orientation.w;
                 wam_->moveTo(goal_ortn, false);
-                response->response = true;
+                res->response = true;
             };
 
         auto cart_pose_move_cb =
-            [this](const hdr_p request_header,
-                   const req_p<cart_pose_move_t> request,
-                   res_p<cart_pose_move_t> response)
+            [this](req_cp<cart_pose_move_t> req, res_p<cart_pose_move_t> res)
             {
-                (void)request_header;
                 pose_type pose;
                 RCLCPP_INFO(get_logger(),
                             "Moving WAM to commanded Cartesian Pose");
-                pose.get<0>() << request->pose.position.x,
-                                 request->pose.position.y,
-                                 request->pose.position.z;
-                response->response = true;
-                pose.get<1>().x() = request->pose.orientation.x;
-                pose.get<1>().y() = request->pose.orientation.y;
-                pose.get<1>().z() = request->pose.orientation.z;
-                pose.get<1>().w() = request->pose.orientation.w;
+                pose.get<0>() << req->pose.position.x,
+                                 req->pose.position.y,
+                                 req->pose.position.z;
+                res->response = true;
+                pose.get<1>().x() = req->pose.orientation.x;
+                pose.get<1>().y() = req->pose.orientation.y;
+                pose.get<1>().z() = req->pose.orientation.z;
+                pose.get<1>().w() = req->pose.orientation.w;
                 wam_->moveTo(pose, false);
-                response->response = true;
+                res->response = true;
             };
 
         auto set_velocity_limit_cb =
-            [this](const hdr_p request_header,
-                   const req_p<velocity_limit_t> request,
-                   res_p<velocity_limit_t> response)
+            [this](req_cp<velocity_limit_t> req, res_p<velocity_limit_t>)
             {
-                (void)request_header;
                 RCLCPP_INFO(get_logger(), "Setting WAM Velocity Limit");
-                pm_.getSafetyModule()->setVelocityLimit(request->velocity_limit);
-                (void)response;
+                pm_.getSafetyModule()->setVelocityLimit(req->velocity_limit);
             };
 
         move_to_home_srv_

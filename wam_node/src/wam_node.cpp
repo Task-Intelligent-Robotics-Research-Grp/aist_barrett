@@ -130,7 +130,6 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
                 publish_node->publishJointState();
                 publish_node->publishCartPose();
                 publish_node->publishToolVelocity();
-                publish_node->publishJointVelocities();
                 loop_rate.sleep();
             }
             customWaitForMode(barrett::SafetyModule::IDLE, sm, publish_node);
@@ -163,7 +162,6 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
                 publish_node->publishJointState();
                 publish_node->publishCartPose();
                 publish_node->publishToolVelocity();
-                publish_node->publishJointVelocities();
                 loop_rate.sleep();
             }
             customWaitForMode(barrett::SafetyModule::IDLE, sm, publish_node);
