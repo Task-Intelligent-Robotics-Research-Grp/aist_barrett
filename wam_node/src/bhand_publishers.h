@@ -20,9 +20,8 @@ class BhandPublishers : public rclcpp::Node
     using pub_p                 = typename rclcpp::Publisher<MSG>::SharedPtr;
     using timer_p               = rclcpp::TimerBase::SharedPtr;
     using joint_state_t         = sensor_msgs::msg::JointState;
-    using tactile_state_t       = bhand_msgs::msg::TactileState;
     using tactile_states_t      = bhand_msgs::msg::TactileStateArray;
-    using finger_tip_torques_t  = bhand_msgs::msg::FingerTipTorques;
+    using finger_tip_torque_t   = bhand_msgs::msg::FingerTipTorques;
 
   public:
     explicit BhandPublishers(barrett::Hand* hand, bool found_wam)
@@ -39,16 +38,14 @@ class BhandPublishers : public rclcpp::Node
                  2ms,
                  std::bind(&BhandPublishers::publishJointPositions, this)) :
              nullptr),
-         tactile_state_array_(),
          tactile_state_pub_(
              hand_->hasTactSensors() ?
              create_publisher<tactile_states_t>("/bhand/TactileStates", 100) :
              nullptr),
-         finger_tip_torque_(),
          finger_tip_torque_pub_(
              hand_->hasFingertipTorqueSensors() ?
-             create_publisher<finger_tip_torques_t>("/bhand/FingertipTorques",
-                                                    100) :
+             create_publisher<finger_tip_torque_t>("/bhand/FingertipTorques",
+                                                   100) :
              nullptr),
          sensor_pub_timer_(
              create_wall_timer(20ms,
@@ -76,12 +73,8 @@ class BhandPublishers : public rclcpp::Node
     const pub_p<joint_state_t>          joint_state_pub_;
     const timer_p                       joint_state_pub_timer_;
 
-    tactile_states_t                    tactile_state_array_;
     const pub_p<tactile_states_t>       tactile_state_pub_;
-
-    finger_tip_torques_t                finger_tip_torque_;
-    const pub_p<finger_tip_torques_t>   finger_tip_torque_pub_;
-
+    const pub_p<finger_tip_torque_t>    finger_tip_torque_pub_;
     const timer_p                       sensor_pub_timer_;
 };
 
@@ -94,10 +87,10 @@ BhandPublishers::publishJointPositions()
     const auto& hi = hand_->getInnerLinkPosition();
     const auto& ho = hand_->getOuterLinkPosition();
     for (size_t i = 0; i < 3; ++i)
+    {
         joint_state_.position[i+2] = hi[i];
-    for (size_t j = 0; j < 3; ++j)
-        joint_state_.position[j+5] = ho[j];
-
+        joint_state_.position[i+5] = ho[i];
+    }
     joint_state_.position[0] = -hi[3];
     joint_state_.position[1] =  hi[3];
 
@@ -113,18 +106,20 @@ BhandPublishers::publishSensors()
     if (tactile_state_pub_)
     {
         // std::vector<barrett::TactilePuck*> tactile_pucks = hand_->getTactilePucks();
-        const auto& tactile_pucks = hand_->getTactilePucks();
-        tactile_state_array_.tactile_states.resize(tactile_pucks.size());
+        const auto&             tactile_pucks = hand_->getTactilePucks();
+        tactile_states_t        tactile_states;
+        tactile_states.tactile_states.resize(tactile_pucks.size());
+
         for (size_t i = 0; i < tactile_pucks.size(); ++i)
         {
-            tactile_state_t msg;
+            auto&       tactile_state = tactile_states.tactile_states[i];
             // barrett::TactilePuck::v_type pressures(tactile_pucks[i]->getTactile
             //                                        Data());
             const auto& pressures = tactile_pucks[i]->getTactileData();
             for (ssize_t j = 0; j < pressures.size(); ++j)
             {
                 int value = (int)(pressures[j]*256.0)/102;
-                msg.tactile_state[j] = pressures[j];
+                tactile_state.tactile_state[j] = pressures[j];
                 int c = 0;
                 int chunk;
 
@@ -167,17 +162,19 @@ BhandPublishers::publishSensors()
                         break;
                     }
                 }
-                msg.normalized_tactile_state[j] = c - 5;
+
+                tactile_state.normalized_tactile_state[j] = c - 5;
             }
-            tactile_state_array_.tactile_states[i] = msg;
         }
-        tactile_state_pub_->publish(tactile_state_array_);
+
+        tactile_state_pub_->publish(tactile_states);
     }
 
     if (finger_tip_torque_pub_)
     {
-        finger_tip_torque_.torque = hand_->getFingertipTorque();
-        finger_tip_torque_pub_->publish(finger_tip_torque_);
+        finger_tip_torque_t     finger_tip_torque;
+        finger_tip_torque.torque = hand_->getFingertipTorque();
+        finger_tip_torque_pub_->publish(finger_tip_torque);
     }
 }
 }       // namespace wam_node

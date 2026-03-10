@@ -1,7 +1,3 @@
-#include <iostream>
-#include <memory>
-
-// #include <barrett/detail/stl_utils.h>
 #include <barrett/products/product_manager.h>
 #include <barrett/exception.h>
 
@@ -17,7 +13,7 @@
 namespace wam_node
 {
 // Wait until desired mode reached
-void
+static void
 customWaitForMode(enum barrett::SafetyModule::SafetyMode mode,
                   barrett::SafetyModule* sm,
                   std::shared_ptr<rclcpp::Node> node,
@@ -39,7 +35,7 @@ customWaitForMode(enum barrett::SafetyModule::SafetyMode mode,
 }
 
 // Check for WAM, and prompt on zeroing. Return false if wam not present
-bool
+static bool
 customWaitForWAM(barrett::ProductManager& pm,
                  std::shared_ptr<rclcpp::Node> node)
 {
@@ -64,7 +60,7 @@ customWaitForWAM(barrett::ProductManager& pm,
     return true;
 }
 
-template <size_t DOF> void
+template <size_t DOF> static void
 updateRTThreadCb(std::shared_ptr<WamSubscribers<DOF>> node, double frequency)
 {
     rclcpp::Rate loop_rate(frequency);
@@ -75,20 +71,21 @@ updateRTThreadCb(std::shared_ptr<WamSubscribers<DOF>> node, double frequency)
     }
 }
 
-template <size_t DOF> int
+template <size_t DOF> static int
 wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
          barrett::Hand* hand, barrett::ForceTorqueSensor* fts)
 {
     BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
 
     rclcpp::Rate loop_rate(kPublishFrequency);
-    const auto   sm = pm.getSafetyModule();
 
     if (wam)
     {
+        const auto   sm = pm.getSafetyModule();
+
         wam->gravityCompensate(true);
-        pm.getSafetyModule()->setVelocityLimit(2);
-        pm.getSafetyModule()->setTorqueLimit(3.0);
+        sm->setVelocityLimit(2);
+        sm->setTorqueLimit(3.0);
 
         if (hand)        //found wam and hand.
         {
@@ -130,7 +127,7 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
             while (rclcpp::ok())
             {
                 executor.spin_some();
-                publish_node->publishJointPositions();
+                publish_node->publishJointState();
                 publish_node->publishCartPose();
                 publish_node->publishToolVelocity();
                 publish_node->publishJointVelocities();
@@ -163,7 +160,7 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
             while (rclcpp::ok())
             {
                 executor.spin_some();
-                publish_node->publishJointPositions();
+                publish_node->publishJointState();
                 publish_node->publishCartPose();
                 publish_node->publishToolVelocity();
                 publish_node->publishJointVelocities();

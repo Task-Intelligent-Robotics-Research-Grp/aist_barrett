@@ -19,10 +19,9 @@ class BhandServices : public rclcpp::Node
     template <class SRV>
     using srv_p         = typename rclcpp::Service<SRV>::SharedPtr;
     template <class SRV>
-    using req_p         = std::shared_ptr<typename SRV::Request>;
+    using req_cp        = typename SRV::Request::ConstSharedPtr;
     template <class SRV>
-    using res_p         = std::shared_ptr<typename SRV::Response>;
-    using hdr_p         = std::shared_ptr<rmw_request_id_t>;
+    using res_p         = typename SRV::Response::SharedPtr;
 
     using trigger_t     = std_srvs::srv::Trigger;
     using finger_pos_t  = bhand_msgs::srv::FingerPosition;
@@ -35,221 +34,185 @@ class BhandServices : public rclcpp::Node
   public:
     explicit BhandServices(barrett::Hand* hand)
         :Node("BhandServices"),
-         hand_(hand)
+         hand_(hand),
+         finger_position_srv_(create_service<finger_pos_t>(
+                                  "/bhand/moveToFingerPositions",
+                                  std::bind(&BhandServices::finger_position_cb,
+                                            this,
+                                            std::placeholders::_1,
+                                            std::placeholders::_2))),
+         grasp_position_srv_(create_service<grasp_pos_t>(
+                                 "/bhand/moveToGraspPosition",
+                                 std::bind(&BhandServices::grasp_position_cb,
+                                            this,
+                                            std::placeholders::_1,
+                                            std::placeholders::_2))),
+         spread_position_srv_(create_service<spread_pos_t>(
+                                  "/bhand/moveToSpreadPosition",
+                                  std::bind(&BhandServices::spread_position_cb,
+                                            this,
+                                            std::placeholders::_1,
+                                            std::placeholders::_2))),
+
+         finger_velocity_srv_(create_service<finger_vel_t>(
+                                  "/bhand/moveToFingerVelocities",
+                                  std::bind(&BhandServices::finger_velocity_cb,
+                                            this,
+                                            std::placeholders::_1,
+                                            std::placeholders::_2))),
+         grasp_velocity_srv_(create_service<grasp_vel_t>(
+                                 "/bhand/moveToGraspVelocity",
+                                 std::bind(&BhandServices::grasp_velocity_cb,
+                                           this,
+                                           std::placeholders::_1,
+                                           std::placeholders::_2))),
+         spread_velocity_srv_(create_service<spread_vel_t>(
+                                  "/bhand/moveToSpreadVelocity",
+                                  std::bind(&BhandServices::spread_velocity_cb,
+                                            this,
+                                            std::placeholders::_1,
+                                            std::placeholders::_2))),
+         idle_srv_(create_service<trigger_t>(
+                       "/bhand/idle",
+                       std::bind(&BhandServices::idle_cb, this,
+                                 std::placeholders::_1,
+                                 std::placeholders::_2))),
+         open_grasp_srv_(create_service<trigger_t>(
+                             "/bhand/openGrasp",
+                             std::bind(&BhandServices::open_close_cb, this,
+                                       std::placeholders::_1,
+                                       std::placeholders::_2, false, false))),
+         close_grasp_srv_(create_service<trigger_t>(
+                              "/bhand/closeGrasp",
+                              std::bind(&BhandServices::open_close_cb, this,
+                                        std::placeholders::_1,
+                                        std::placeholders::_2, true, false))),
+         open_spread_srv_(create_service<trigger_t>(
+                              "/bhand/openSpread",
+                              std::bind(&BhandServices::open_close_cb, this,
+                                        std::placeholders::_1,
+                                        std::placeholders::_2, false, true))),
+         close_spread_srv_(create_service<trigger_t>(
+                               "/bhand/closeSpread",
+                               std::bind(&BhandServices::open_close_cb, this,
+                                         std::placeholders::_1,
+                                         std::placeholders::_2, true, true)))
     {
-      // BarrettHand Idle callback
-        auto bhand_idle_cb =
-            [this](const hdr_p request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void)request;
-                RCLCPP_INFO(get_logger(), "Idling Barrett Hand");
-                hand_->idle();
-                response->success = true;
-            };
-
-      // BarrettHand Finger Position Callback
-        auto finger_position_cb =
-            [this](const hdr_p request_header,
-                   const req_p<finger_pos_t> request,
-                   res_p<finger_pos_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                RCLCPP_INFO(get_logger(),
-                            "Moving BarrettHand to Finger Positions %.3f, %.3f, %.3f radians",
-                            request->position[0], request->position[1],
-                            request->position[2]);
-                hand_->trapezoidalMove(
-                    barrett::Hand::jp_type(request->position[0],
-                                           request->position[1],
-                                           request->position[2],
-                                           0.0),
-                    barrett::Hand::GRASP, false);
-                response->response = true;
-            };
-
-      // BarrettHand Grasp Position Callback
-        auto grasp_position_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const req_p<grasp_pos_t> request,
-                   res_p<grasp_pos_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                RCLCPP_INFO(get_logger(),
-                            "Moving BarrettHand Grasp: %.3f radians",
-                            request->position);
-                hand_->trapezoidalMove(
-                    barrett::Hand::jp_type(request->position),
-                    barrett::Hand::GRASP, false);
-                response->response = true;
-            };
-
-      // BarrettHand Spread Position Callback
-        auto spread_position_cb =
-            [this](const hdr_p request_header,
-                   const req_p<spread_pos_t> request,
-                   res_p<spread_pos_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                RCLCPP_INFO(get_logger(), "Moving BarrettHand Spread: %.3f radians",
-                            request->position);
-                hand_->trapezoidalMove(
-                    barrett::Hand::jp_type(request->position),
-                    barrett::Hand::SPREAD, false);
-                response->response = true;
-            };
-
-      // BarrettHand Finger Velocity Callback
-        auto finger_velocity_cb =
-            [this](const hdr_p request_header,
-                   const req_p<finger_vel_t> request,
-                   res_p<finger_vel_t> response)
-             {
-               /*To avoid compiler warning for unused variable*/
-                 (void)request_header;
-                 RCLCPP_INFO(get_logger(),
-                             "Moving BarrettHand Finger Velocities: %.3f, %.3f, %3.f rad/s",
-                             request->velocity[0], request->velocity[1],
-                             request->velocity[2]);
-                 hand_->velocityMove(
-                     barrett::Hand::jv_type(request->velocity[0],
-                                            request->velocity[1],
-                                            request->velocity[2],
-                                            0.0),
-                     barrett::Hand::GRASP);
-                response->response = true;
-            };
-
-      // BarrettHand Grasp Velocity Callback
-        auto grasp_velocity_cb =
-            [this](const hdr_p request_header,
-                   const req_p<grasp_vel_t> request,
-                   res_p<grasp_vel_t> response) -> void
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                RCLCPP_INFO(get_logger(),
-                            "Moving BarrettHand Grasp Velocity: %.3f rad/s",
-                            request->velocity);
-                hand_->velocityMove(barrett::Hand::jv_type(request->velocity),
-                                   barrett::Hand::GRASP);
-                response->response = true;
-            };
-
-      // BarrettHand Spread Velocity Callback
-        auto spread_velocity_cb =
-            [this](const hdr_p request_header,
-                   const req_p<spread_vel_t> request,
-                   res_p<spread_vel_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                RCLCPP_INFO(get_logger(),
-                            "Moving BarrettHand Spread Velocity: %.3f rad/s",
-                            request->velocity);
-                hand_->velocityMove(barrett::Hand::jv_type(request->velocity),
-                                    barrett::Hand::SPREAD);
-                response->response = true;
-            };
-
-      // BarrettHand Open Grasp Callback
-        auto open_grasp_cb =
-            [this](const hdr_p request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void)request;
-                RCLCPP_INFO(get_logger(), "Opening the BarrettHand Grasp");
-                hand_->open(barrett::Hand::GRASP, false);
-                response->success = true;
-            };
-
-        auto close_grasp_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void) request;
-                RCLCPP_INFO(get_logger(), "Closing the BarrettHand Grasp");
-                hand_->close(barrett::Hand::GRASP, false);
-                response->success = true;
-            };
-
-      // BarrettHand Open Spread Callback
-        auto open_spread_cb =
-            [this](const hdr_p request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void) request;
-                RCLCPP_INFO(get_logger(), "Opening the BarrettHand Spread");
-                hand_->open(barrett::Hand::SPREAD, false);
-                response->success = true;
-            };
-
-      // BarrettHand Close Spread Callback
-        auto close_spread_cb =
-            [this](const hdr_p request_header,
-                   const req_p<trigger_t> request, res_p<trigger_t> response)
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void) request;
-                RCLCPP_INFO(get_logger(), "Closing the BarrettHand Spread");
-                hand_->close(barrett::Hand::SPREAD, false);
-                response->success = true;
-            };
-
-      // Create Services
-        finger_position_srv_
-            = create_service<finger_pos_t>("/bhand/moveToFingerPositions",
-                                           finger_position_cb);
-        grasp_position_srv_
-            = create_service<grasp_pos_t>("/bhand/moveToGraspPosition",
-                                          grasp_position_cb);
-        spread_position_srv_
-            = create_service<spread_pos_t>("/bhand/moveToSpreadPosition",
-                                           spread_position_cb);
-        finger_velocity_srv_
-            = create_service<finger_vel_t>("/bhand/moveToFingerVelocities",
-                                           finger_velocity_cb);
-        grasp_velocity_srv_
-            = create_service<grasp_vel_t>("/bhand/moveToGraspVelocity",
-                                          grasp_velocity_cb);
-        spread_velocity_srv_
-            = create_service<spread_vel_t>("/bhand/moveToSpreadVelocity",
-                                           spread_velocity_cb);
-        idle_srv_ = create_service<trigger_t>("/bhand/idle", bhand_idle_cb);
-        open_grasp_srv_ = create_service<trigger_t>("/bhand/openGrasp",
-                                                    open_grasp_cb);
-        close_grasp_srv_ = create_service<trigger_t>("/bhand/closeGrasp",
-                                                     close_grasp_cb);
-        open_spread_srv_ = create_service<trigger_t>("/bhand/openSpread",
-                                                     open_spread_cb);
-        close_spread_srv_ = create_service<trigger_t>("/bhand/closeSpread",
-                                                      close_spread_cb);
     }
 
   private:
+    void        finger_position_cb(req_cp<finger_pos_t> req,
+                                   res_p<finger_pos_t>  res)
+                {
+                    RCLCPP_INFO(get_logger(),
+                                "Moving BarrettHand to Finger Positions %.3f, %.3f, %.3f radians",
+                                req->position[0], req->position[1],
+                                req->position[2]);
+                    hand_->trapezoidalMove(
+                        barrett::Hand::jp_type(req->position[0],
+                                               req->position[1],
+                                               req->position[2],
+                                               0.0),
+                        barrett::Hand::GRASP, false);
+                    res->response = true;
+                }
+    void        grasp_position_cb(req_cp<grasp_pos_t> req,
+                                  res_p<grasp_pos_t>  res)
+                {
+                    RCLCPP_INFO(get_logger(),
+                                "Moving BarrettHand Grasp: %.3f radians",
+                                req->position);
+
+                    hand_->trapezoidalMove(
+                        barrett::Hand::jp_type(req->position),
+                        barrett::Hand::GRASP, false);
+                    res->response = true;
+                }
+    void        spread_position_cb(req_cp<spread_pos_t> req,
+                                   res_p<spread_pos_t>  res)
+                {
+                    RCLCPP_INFO(get_logger(),
+                                "Moving BarrettHand Spread: %.3f radians",
+                                req->position);
+
+                    hand_->trapezoidalMove(
+                        barrett::Hand::jp_type(req->position),
+                        barrett::Hand::SPREAD, false);
+                    res->response = true;
+                }
+    void        finger_velocity_cb(req_cp<finger_vel_t> req,
+                                   res_p<finger_vel_t>  res)
+                {
+                    RCLCPP_INFO(get_logger(),
+                                "Moving BarrettHand Finger Velocities: %.3f, %.3f, %3.f rad/s",
+                                req->velocity[0], req->velocity[1],
+                                req->velocity[2]);
+
+                    hand_->velocityMove(
+                        barrett::Hand::jv_type(req->velocity[0],
+                                               req->velocity[1],
+                                               req->velocity[2],
+                                               0.0),
+                        barrett::Hand::GRASP);
+                    res->response = true;
+                }
+    void        grasp_velocity_cb(req_cp<grasp_vel_t> req,
+                                  res_p<grasp_vel_t>  res)
+                {
+                    RCLCPP_INFO(get_logger(),
+                                "Moving BarrettHand Grasp Velocity: %.3f rad/s",
+                                req->velocity);
+
+                    hand_->velocityMove(barrett::Hand::jv_type(req->velocity),
+                                        barrett::Hand::GRASP);
+                    res->response = true;
+                }
+    void        spread_velocity_cb(req_cp<spread_vel_t> req,
+                                   res_p<spread_vel_t>  res)
+                {
+                    RCLCPP_INFO(get_logger(),
+                                "Moving BarrettHand Spread Velocity: %.3f rad/s",
+                                req->velocity);
+
+                    hand_->velocityMove(barrett::Hand::jv_type(req->velocity),
+                                        barrett::Hand::SPREAD);
+                    res->response = true;
+                }
+    void        idle_cb(req_cp<trigger_t>, res_p<trigger_t> res)
+                {
+                    RCLCPP_INFO(get_logger(), "Idling Barrett Hand");
+
+                    hand_->idle();
+                    res->success = true;
+                }
+    void        open_close_cb(req_cp<trigger_t>, res_p<trigger_t> res,
+                              bool close, bool spread)
+                {
+                    RCLCPP_INFO(get_logger(), "%s the BarrettHand %s",
+                                (close  ? "closing" : "opening"),
+                                (spread ? "SPREAD"  : "GRASP"));
+
+                    const auto  axis = (spread ? barrett::Hand::SPREAD
+                                               : barrett::Hand::GRASP);
+                    if (close)
+                        hand_->close(axis, false);
+                    else
+                        hand_->open(axis, false);
+                    res->success = true;
+                }
+
+  private:
     barrett::Hand* const        hand_;
-    srv_p<finger_pos_t>         finger_position_srv_;
-    srv_p<grasp_pos_t>          grasp_position_srv_;
-    srv_p<spread_pos_t>         spread_position_srv_;
-    srv_p<finger_vel_t>         finger_velocity_srv_;
-    srv_p<grasp_vel_t>          grasp_velocity_srv_;
-    srv_p<spread_vel_t>         spread_velocity_srv_;
-    srv_p<trigger_t>            idle_srv_;
-    srv_p<trigger_t>            open_grasp_srv_;
-    srv_p<trigger_t>            close_grasp_srv_;
-    srv_p<trigger_t>            open_spread_srv_;
-    srv_p<trigger_t>            close_spread_srv_;
+    const srv_p<finger_pos_t>   finger_position_srv_;
+    const srv_p<grasp_pos_t>    grasp_position_srv_;
+    const srv_p<spread_pos_t>   spread_position_srv_;
+    const srv_p<finger_vel_t>   finger_velocity_srv_;
+    const srv_p<grasp_vel_t>    grasp_velocity_srv_;
+    const srv_p<spread_vel_t>   spread_velocity_srv_;
+    const srv_p<trigger_t>      idle_srv_;
+    const srv_p<trigger_t>      open_grasp_srv_;
+    const srv_p<trigger_t>      close_grasp_srv_;
+    const srv_p<trigger_t>      open_spread_srv_;
+    const srv_p<trigger_t>      close_spread_srv_;
 };
 }       // namespace wam_node
