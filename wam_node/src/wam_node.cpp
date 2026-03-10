@@ -1,56 +1,10 @@
 #include <iostream>
 #include <memory>
-#include "rclcpp/rclcpp.hpp"
-// Standard ROS messages
-#include "geometry_msgs/msg/point.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/quaternion.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
-#include "geometry_msgs/msg/wrench.hpp"
-#include "std_msgs/msg/bool.hpp"
-#include "sensor_msgs/msg/joint_state.hpp"
-#include "trajectory_msgs/msg/joint_trajectory.hpp"
-#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
-#include "std_srvs/srv/trigger.hpp"
-#include "std_srvs/srv/set_bool.hpp"
-// Custom WAM srvs
-#include "wam_msgs/srv/cart_orientation_move.hpp"
-#include "wam_msgs/srv/cart_pose_move.hpp"
-#include "wam_msgs/srv/cart_position_move.hpp"
-#include "wam_msgs/srv/joint_move.hpp"
-#include "wam_msgs/srv/velocity_limit.hpp"
-// Custom WAM msgs
-#include "wam_msgs/msg/rt_angular_velocity.hpp"
-#include "wam_msgs/msg/rt_cart_orientation.hpp"
-#include "wam_msgs/msg/rt_cart_pose.hpp"
-#include "wam_msgs/msg/rt_cart_position.hpp"
-#include "wam_msgs/msg/rt_joint_positions.hpp"
-#include "wam_msgs/msg/rt_joint_velocities.hpp"
-#include "wam_msgs/msg/rt_linear_velocity.hpp"
-#include "wam_msgs/msg/rt_linearand_angular_velocity.hpp"
-//Custom BarrettHand srvs
-#include "bhand_msgs/srv/finger_position.hpp"
-#include "bhand_msgs/srv/finger_velocity.hpp"
-#include "bhand_msgs/srv/grasp_position.hpp"
-#include "bhand_msgs/srv/grasp_velocity.hpp"
-#include "bhand_msgs/srv/spread_position.hpp"
-#include "bhand_msgs/srv/spread_velocity.hpp"
-//Custom BarrettHand msgs
-#include "bhand_msgs/msg/finger_tip_torques.hpp"
-#include "bhand_msgs/msg/tactile_state.hpp"
-#include "bhand_msgs/msg/tactile_state_array.hpp"
-// Barrett Headers
-#include <barrett/detail/stl_utils.h>
-#include <barrett/products/product_manager.h>
-#include <barrett/systems.h>
-#include <barrett/systems/wam.h>
-#include <barrett/units.h>
-// For custom main function, needed for standalone BarrettHand
-#include <barrett/exception.h>
-#include <barrett/products/product_manager.h>
-#include <barrett/systems/wam.h>
 
-#include "tf2/LinearMath/Matrix3x3.h"
+// #include <barrett/detail/stl_utils.h>
+#include <barrett/products/product_manager.h>
+#include <barrett/exception.h>
+
 // Custom Headers
 #include "custom_systems.h"
 #include "wam_publishers.h"
@@ -60,11 +14,12 @@
 #include "bhand_services.h"
 #include "fts_node.h"
 
-using namespace barrett;
-
+namespace wam_node
+{
 // Wait until desired mode reached
 void
-customWaitForMode(enum SafetyModule::SafetyMode mode, SafetyModule *sm,
+customWaitForMode(enum barrett::SafetyModule::SafetyMode mode,
+                  barrett::SafetyModule* sm,
                   std::shared_ptr<rclcpp::Node> node,
                   double pollingPeriod_s = 0.25)
 {
@@ -72,28 +27,29 @@ customWaitForMode(enum SafetyModule::SafetyMode mode, SafetyModule *sm,
     {
         return;
     }
-    if (sm->getMode() == SafetyModule::ESTOP)
+    if (sm->getMode() == barrett::SafetyModule::ESTOP)
     {
         RCLCPP_INFO(node->get_logger(), "WAM is currently E-Stopped");
     }
     RCLCPP_INFO(node->get_logger(), "Please %s the WAM.\n",
-                SafetyModule::getSafetyModeStr(mode));
+                barrett::SafetyModule::getSafetyModeStr(mode));
     do
     {
-        btsleep(pollingPeriod_s);
+        barrett::btsleep(pollingPeriod_s);
     } while (sm->getMode() != mode);
 }
 
 // Check for WAM, and prompt on zeroing. Return false if wam not present
 bool
-customWaitForWAM(ProductManager &pm, std::shared_ptr<rclcpp::Node> node)
+customWaitForWAM(barrett::ProductManager& pm,
+                 std::shared_ptr<rclcpp::Node> node)
 {
     if (!pm.foundSafetyModule())
     {
         return false;
     }
-    SafetyModule *sm = pm.getSafetyModule();
-    customWaitForMode(SafetyModule::IDLE, sm, node);
+    auto sm = pm.getSafetyModule();
+    customWaitForMode(barrett::SafetyModule::IDLE, sm, node);
     if (!pm.foundWam())
     {
         pm.enumerate();
@@ -107,7 +63,7 @@ customWaitForWAM(ProductManager &pm, std::shared_ptr<rclcpp::Node> node)
         RCLCPP_INFO(node->get_logger(),
                     "The WAM needs to be zeroed. Please move it to its "
                     "home position, then press [Enter].");
-        detail::waitForEnter();
+        barrett::detail::waitForEnter();
     }
     return true;
 }
@@ -124,12 +80,12 @@ updateRTThreadCb(std::shared_ptr<WamSubscribers<DOF>> node, double frequency)
 }
 
 template <size_t DOF> int
-wam_main(ProductManager &pm, systems::Wam<DOF> *wam,
+wam_main(barrett::ProductManager &pm, barrett::systems::Wam<DOF> *wam,
          bool found_wam, bool found_hand, bool found_fts)
 {
     BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
     rclcpp::Rate loop_rate(kPublishFrequency);
-    SafetyModule *sm = pm.getSafetyModule();
+    barrett::SafetyModule *sm = pm.getSafetyModule();
     if (found_wam)
     {
         wam->gravityCompensate(true);
@@ -138,12 +94,12 @@ wam_main(ProductManager &pm, systems::Wam<DOF> *wam,
     }
     if (found_wam && found_hand)
     { //found wam and hand.
-        Hand *hand = pm.getHand();
+        barrett::Hand *hand = pm.getHand();
         jp_type jp_init = wam->getJointPositions();
         jp_init[3] -= 0.35;  // move j3 to allow room for BarrettHand initialization
-        btsleep(0.5);
+        barrett::btsleep(0.5);
         wam->moveTo(jp_init);
-        btsleep(0.5);
+        barrett::btsleep(0.5);
         hand->initialize();
         hand->update();
 
@@ -177,7 +133,7 @@ wam_main(ProductManager &pm, systems::Wam<DOF> *wam,
             publish_node->publishJointVelocities();
             loop_rate.sleep();
         }
-        customWaitForMode(SafetyModule::IDLE, sm, publish_node);
+        customWaitForMode(barrett::SafetyModule::IDLE, sm, publish_node);
         rclcpp::shutdown();
     }
     else if (found_wam && !found_hand)
@@ -209,12 +165,12 @@ wam_main(ProductManager &pm, systems::Wam<DOF> *wam,
             publish_node->publishJointVelocities();
             loop_rate.sleep();
         }
-        customWaitForMode(SafetyModule::IDLE, sm, publish_node);
+        customWaitForMode(barrett::SafetyModule::IDLE, sm, publish_node);
         rclcpp::shutdown();
     }
     else if (found_hand && !found_wam)
     { //found only hand. Launch a BhandPublish node
-        Hand *hand = pm.getHand();
+        barrett::Hand *hand = pm.getHand();
         hand->initialize();
         hand->update();
         auto bhand_services_node = std::make_shared<BhandServices>(*pm.getHand());
@@ -242,19 +198,20 @@ wam_main(ProductManager &pm, systems::Wam<DOF> *wam,
     }
     return 0;
 }
+}       // namespace wam_node
 
 int
 main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    ProductManager pm;
-    ::barrett::installExceptionHandler();
+    barrett::ProductManager pm;
+    barrett::installExceptionHandler();
     auto node = rclcpp::Node::make_shared("wam_node");
     bool found_hand = false;
     bool found_fts = false;
 
   //Check if WAM present
-    if (customWaitForWAM(pm, node))
+    if (wam_node::customWaitForWAM(pm, node))
     {
         if (pm.foundHand())
         {
@@ -270,20 +227,20 @@ main(int argc, char **argv)
         if (pm.foundWam3())
         {
             RCLCPP_INFO(node->get_logger(), "Found 3DOF WAM");
-            return wam_main<3>(pm, pm.getWam3(true, NULL), true,
-                               found_hand, found_fts);
+            return wam_node::wam_main<3>(pm, pm.getWam3(true, NULL), true,
+                                         found_hand, found_fts);
         }
         else if (pm.foundWam4())
         {
             RCLCPP_INFO(node->get_logger(), "Found 4DOF WAM");
-            return wam_main<4>(pm, pm.getWam4(true, NULL), true,
-                               found_hand, found_fts);
+            return wam_node::wam_main<4>(pm, pm.getWam4(true, NULL), true,
+                                         found_hand, found_fts);
         }
         else if (pm.foundWam7())
         {
             RCLCPP_INFO(node->get_logger(), "Found 7DOF WAM");
-            return wam_main<7>(pm, pm.getWam7(true, NULL), true,
-                               found_hand, found_fts);
+            return wam_node::wam_main<7>(pm, pm.getWam7(true, NULL), true,
+                                         found_hand, found_fts);
         }
         else
         {
@@ -297,13 +254,13 @@ main(int argc, char **argv)
         found_fts = pm.foundForceTorqueSensor();
         RCLCPP_INFO(node->get_logger(), "Found BarrettHand");
         rclcpp::spin_some(node);
-        return wam_main<3>(pm, NULL, false, true, found_fts);
+        return wam_node::wam_main<3>(pm, NULL, false, true, found_fts);
     }
     else if (pm.foundForceTorqueSensor())
     {
       //no wam, no Bhand, only FTS
         RCLCPP_INFO(node->get_logger(), "Found FTS");
-        return wam_main<3>(pm, NULL, false, false, true);
+        return wam_node::wam_main<3>(pm, NULL, false, false, true);
     }
     else
     {

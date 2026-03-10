@@ -1,63 +1,79 @@
-#ifndef WAM_NODE_SRC_FTS_NODE_
-#define WAM_NODE_SRC_FTS_NODE_
+#pragma once
 
+#include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <geometry_msgs/msg/wrench.hpp>
+
+namespace wam_node
+{
 class FtsNode : public rclcpp::Node
 {
+  private:
     BARRETT_UNITS_FIXED_SIZE_TYPEDEFS;
 
+    template <class MSG>
+    using pub_p         = typename rclcpp::Publisher<MSG>::SharedPtr;
+    using timer_p       = rclcpp::TimerBase::SharedPtr;
+    template <class SRV>
+    using srv_p         = typename rclcpp::Service<SRV>::SharedPtr;
+    template <class SRV>
+    using req_p         = std::shared_ptr<typename SRV::Request>;
+    template <class SRV>
+    using res_p         = std::shared_ptr<typename SRV::Response>;
+    using hdr_p         = std::shared_ptr<rmw_request_id_t>;
+
+    using trigger_t     = std_srvs::srv::Trigger;
+    using wrench_t      = geometry_msgs::msg::Wrench;
+
   public:
-    explicit
-    FtsNode(ForceTorqueSensor* fts__)
-        :Node("FtsNode"), fts_(fts__)
-    {
-        fts_->tare();
-        fts_pub_
-            = this->create_publisher<geometry_msgs::msg::Wrench>("/FTS/States",
-                                                                 100);
-        fts_pub_timer_
-            = this->create_wall_timer(2ms,
-                                      std::bind(&FtsNode::publishFTS, this));
-        auto tare_srv_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                   std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void
-            {
-              /*To avoid compiler warning for unused variable*/
-                (void)request_header;
-                (void)request;
-                RCLCPP_INFO(this->get_logger(), "Taring FTS");
-                fts_->tare();
-                response->success = true;
-            };
-        tare_srv_ = create_service<std_srvs::srv::Trigger>("/FTS/Tare",
-                                                           tare_srv_cb);
-    }
+    explicit    FtsNode(barrett::ForceTorqueSensor* fts)
+                  :Node("FtsNode"), fts_(fts)
+                {
+                    fts_->tare();
+                    fts_pub_ = create_publisher<wrench_t>("/FTS/States", 100);
+                    fts_pub_timer_
+                        = create_wall_timer(2ms,
+                                            std::bind(&FtsNode::publishFTS,
+                                                      this));
+                    auto tare_srv_cb =
+                        [this](const hdr_p request_header,
+                               const req_p<trigger_t> request,
+                               res_p<trigger_t> response)
+                        {
+                          /*To avoid compiler warning for unused variable*/
+                            (void)request_header;
+                            (void)request;
+                            RCLCPP_INFO(get_logger(), "Taring FTS");
+                            fts_->tare();
+                            response->success = true;
+                        };
+                    tare_srv_ = create_service<trigger_t>("/FTS/Tare",
+                                                          tare_srv_cb);
+                }
 
-  protected:
-    ForceTorqueSensor*                                          fts_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr          tare_srv_;
-    geometry_msgs::msg::Wrench                                  fts_state_;
-    rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr    fts_pub_;
+  private:
+    void        publishFTS()
+                {
+                    fts_->update();
+                    cf_ = barrett::math::saturate(fts_->getForce(), 99.99);
+                    ct_ = barrett::math::saturate(fts_->getTorque(), 9.999);
+                    fts_state_.force.x = cf_[0];
+                    fts_state_.force.y = cf_[1];
+                    fts_state_.force.z = cf_[2];
+                    fts_state_.torque.x = ct_[0];
+                    fts_state_.torque.y = ct_[1];
+                    fts_state_.torque.z = ct_[2];
+                    fts_pub_->publish(fts_state_);
+                }
 
-    void publishFTS();
-    cf_type                                                     cf_;
-    ct_type                                                     ct_;
-    rclcpp::TimerBase::SharedPtr                                fts_pub_timer_;
+  private:
+    barrett::ForceTorqueSensor* const   fts_;
+    srv_p<trigger_t>                    tare_srv_;
+    wrench_t                            fts_state_;
+    pub_p<wrench_t>                     fts_pub_;
+    timer_p                             fts_pub_timer_;
+
+    cf_type                             cf_;
+    ct_type                             ct_;
 };
-
-void
-FtsNode::publishFTS()
-{
-    fts_->update();
-    cf_ = math::saturate(fts_->getForce(), 99.99);
-    ct_ = math::saturate(fts_->getTorque(), 9.999);
-    fts_state_.force.x = cf_[0];
-    fts_state_.force.y = cf_[1];
-    fts_state_.force.z = cf_[2];
-    fts_state_.torque.x = ct_[0];
-    fts_state_.torque.y = ct_[1];
-    fts_state_.torque.z = ct_[2];
-    fts_pub_->publish(fts_state_);
-}
-
-#endif  // WAM_NODE_SRC_FTS_NODE_
+}       // namespace wam_node

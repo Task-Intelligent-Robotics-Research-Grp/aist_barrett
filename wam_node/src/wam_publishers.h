@@ -1,9 +1,18 @@
-#ifndef WAM_NODE_SRC_WAM_PUBLISHER_H_
-#define WAM_NODE_SRC_WAM_PUBLISHER_H_
+#pragma once
+
 #include <chrono>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <barrett/math/kinematics.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+
 using namespace std::chrono_literals;
 
+namespace wam_node
+{
 std::vector<std::string> kBhandJointNames =
 {
     "bhand_j11_joint", "bhand_j21_joint", "bhand_j12_joint", "bhand_j22_joint",
@@ -13,34 +22,36 @@ std::vector<std::string> kBhandJointNames =
 template <size_t DOF>
 class WamPublishers : public rclcpp::Node
 {
+  private:
     BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
-  public:
-    void publishJointPositions();
-    void publishCartPose();
-    void publishToolVelocity();
-    void publishJointVelocities();
 
-    explicit WamPublishers(systems::Wam<DOF> &wam, ProductManager &pm,
+    template <class MSG>
+    using pub_p         = typename rclcpp::Publisher<MSG>::SharedPtr;
+    using timer_p       = rclcpp::TimerBase::SharedPtr;
+
+    using joint_state_t = sensor_msgs::msg::JointState;
+    using bool_t        = std_msgs::msg::Bool;
+    using pose_t        = geometry_msgs::msg::PoseStamped;
+    using twist_t       = geometry_msgs::msg::TwistStamped;
+
+  public:
+    explicit WamPublishers(barrett::systems::Wam<DOF>& wam,
+                           barrett::ProductManager& pm,
                            bool found_hand)
-        : Node("WamPublishers"), wam_(wam), pm_(pm)
+        :Node("WamPublishers"), wam_(wam), pm_(pm)
     {
         first_publish_ = true;
         found_hand_ = found_hand;
         joint_position_pub_
-            = this->create_publisher<sensor_msgs::msg::JointState>(
-                "/joint_states", 100);
+            = create_publisher<joint_state_t>("/joint_states", 100);
         trajectory_status_pub_
-            = this->create_publisher<std_msgs::msg::Bool>(
-                "wam/trajectoryStatus", 100);
+            = create_publisher<bool_t>("wam/trajectoryStatus", 100);
         joint_velocity_pub_
-            = this->create_publisher<sensor_msgs::msg::JointState>(
-                "/wam/jointVelocity", 100);
+            = create_publisher<joint_state_t>("/wam/jointVelocity", 100);
         tool_pose_pub_
-            = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-                "/wam/ToolPose", 100);
+            = create_publisher<pose_t>("/wam/ToolPose", 100);
         tool_velocity_pub_
-            = this->create_publisher<geometry_msgs::msg::TwistStamped>(
-                "/wam/toolVelocity", 100);
+            = create_publisher<twist_t>("/wam/toolVelocity", 100);
 
         if (found_hand_)
         {  // if hand is present, publish hand joint states
@@ -71,47 +82,57 @@ class WamPublishers : public rclcpp::Node
         }
     }
 
-  protected:
-    bool found_hand_;
-    Hand *hand_;
-    cf_type cf_;
-    ct_type ct_;
-    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr
-    joint_position_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr
-    joint_velocity_pub_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr tool_pose_pub_;
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr tool_velocity_pub_;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr trajectory_status_pub_;
-    systems::Wam<DOF> &wam_;
-    ProductManager &pm_;
-  // Libbarrett Data Types
-    pose_type current_tool_pose_;
-    pose_type prev_tool_pose_;
-    jp_type current_joint_position_;
-    jv_type current_joint_velocity_;
-    jt_type current_joint_torque_;
-  // ROS2 Data Types
-    rclcpp::Time current_velocity_pub_time_, prev_velocity_pub_time_;
-    sensor_msgs::msg::JointState joint_position_msg_;
-    sensor_msgs::msg::JointState joint_velocity_msg_;
-    rclcpp::TimerBase::SharedPtr joint_position_pub_timer_, tool_pose_pub_timer_,
-        tool_velocity_pub_timer_, joint_velocity_pub_timer_;
-    bool first_publish_;
+    void publishJointPositions();
+    void publishCartPose();
+    void publishToolVelocity();
+    void publishJointVelocities();
 
+  protected:
   /** Returns Tool Velocity.
    * Tool Velocity =
    * (current_tool_pose_-previous_tool_pose_)/(current_velocity_pub_time_-prev_velocity_pub_time_)
    */
-    geometry_msgs::msg::TwistStamped calcToolVelocity();
+    twist_t calcToolVelocity();
   // Simple Function for converting Quaternion to RPY
-    math::Vector<3>::type toRPY(Eigen::Quaterniond inquat);
+    barrett::math::Vector<3>::type toRPY(Eigen::Quaterniond inquat);
+
+  protected:
+    barrett::systems::Wam<DOF>& wam_;
+    barrett::ProductManager&    pm_;
+    bool                        found_hand_;
+    barrett::Hand*              hand_;
+    cf_type cf_;
+    ct_type ct_;
+
+    pub_p<joint_state_t>        joint_position_pub_;
+    pub_p<joint_state_t>        joint_velocity_pub_;
+    pub_p<pose_t>               tool_pose_pub_;
+    pub_p<twist_t>              tool_velocity_pub_;
+    pub_p<bool_t>               trajectory_status_pub_;
+
+  // Libbarrett Data Types
+    pose_type                   current_tool_pose_;
+    pose_type                   prev_tool_pose_;
+    jp_type                     current_joint_position_;
+    jv_type                     current_joint_velocity_;
+    jt_type                     current_joint_torque_;
+
+  // ROS2 Data Types
+    rclcpp::Time                current_velocity_pub_time_,
+                                prev_velocity_pub_time_;
+    joint_state_t               joint_position_msg_;
+    joint_state_t               joint_velocity_msg_;
+    timer_t                     joint_position_pub_timer_,
+                                tool_pose_pub_timer_,
+                                tool_velocity_pub_timer_,
+                                joint_velocity_pub_timer_;
+    bool                        first_publish_;
 };
 
-template <size_t DOF> math::Vector<3>::type
+template <size_t DOF> barrett::math::Vector<3>::type
 WamPublishers<DOF>::toRPY(Eigen::Quaterniond inquat)
 {
-    math::Vector<3>::type rpy;
+    barrett::math::Vector<3>::type rpy;
     tf2::Quaternion q(inquat.x(), inquat.y(), inquat.z(), inquat.w());
     tf2::Matrix3x3(q).getRPY(rpy[0], rpy[1], rpy[2]);
     return rpy;
@@ -132,8 +153,8 @@ WamPublishers<DOF>::publishJointPositions()
     if (found_hand_)
     {
         hand_->update();
-        Hand::jp_type hi = hand_->getInnerLinkPosition();  // get finger positions information
-        Hand::jp_type ho = hand_->getOuterLinkPosition();
+        barrett::Hand::jp_type hi = hand_->getInnerLinkPosition();  // get finger positions information
+        barrett::Hand::jp_type ho = hand_->getOuterLinkPosition();
         for (int i = 0; i < 3; i++)
         {
             joint_position_msg_.position[i + 2 + DOF] = hi[i];
@@ -153,7 +174,7 @@ template <size_t DOF> void
 WamPublishers<DOF>::publishJointVelocities()
 {
     current_joint_velocity_ = wam_.getJointVelocities();
-    std_msgs::msg::Bool trajectory_status_msg;
+    bool_t trajectory_status_msg;
     int no_zeros = 0;
     for (int i = 0; i < (int)DOF; i++)
     {
@@ -181,7 +202,7 @@ WamPublishers<DOF>::publishJointVelocities()
 template <size_t DOF> void
 WamPublishers<DOF>::publishCartPose()
 {
-    geometry_msgs::msg::PoseStamped pose_msg;
+    pose_t pose_msg;
     pose_msg.header.stamp = rclcpp::Node::now();
     current_tool_pose_ = wam_.getToolPose();
     pose_msg.pose.position.x = current_tool_pose_.get<0>()(0);
@@ -197,7 +218,7 @@ WamPublishers<DOF>::publishCartPose()
 template <size_t DOF> geometry_msgs::msg::TwistStamped
 WamPublishers<DOF>::calcToolVelocity()
 {
-    geometry_msgs::msg::TwistStamped tool_velocity_msg;
+    twist_t tool_velocity_msg;
     tool_velocity_msg.twist.linear.x
         = (current_tool_pose_.get<0>()(0) - prev_tool_pose_.get<0>()(0)) /
           ((current_velocity_pub_time_.nanoseconds() -
@@ -211,8 +232,8 @@ WamPublishers<DOF>::calcToolVelocity()
           ((current_velocity_pub_time_.nanoseconds() -
             prev_velocity_pub_time_.nanoseconds())) * 1000000000;
 
-    math::Vector<3>::type current_tool_rpy = toRPY(current_tool_pose_.get<1>());
-    math::Vector<3>::type previous_tool_rpy = toRPY(prev_tool_pose_.get<1>());
+    barrett::math::Vector<3>::type current_tool_rpy = toRPY(current_tool_pose_.get<1>());
+    barrett::math::Vector<3>::type previous_tool_rpy = toRPY(prev_tool_pose_.get<1>());
     tool_velocity_msg.twist.angular.x
         = (current_tool_rpy(0) - previous_tool_rpy(0)) /
           ((current_velocity_pub_time_.nanoseconds() -
@@ -232,7 +253,7 @@ WamPublishers<DOF>::calcToolVelocity()
 template <size_t DOF> void
 WamPublishers<DOF>::publishToolVelocity()
 {
-    geometry_msgs::msg::TwistStamped tool_velocity_msg_;
+    twist_t tool_velocity_msg_;
 
     if (first_publish_)
     {
@@ -256,5 +277,4 @@ WamPublishers<DOF>::publishToolVelocity()
         prev_velocity_pub_time_ = current_velocity_pub_time_;
     }
 }
-
-#endif  // WAM_NODE_SRC_WAM_PUBLISHER_H_
+}       // namespace wam_node

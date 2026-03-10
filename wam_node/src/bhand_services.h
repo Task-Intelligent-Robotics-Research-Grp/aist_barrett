@@ -1,256 +1,255 @@
-#ifndef WAM_NODE_SRC_BHAND_SERVICES_H_
-#define WAM_NODE_SRC_BHAND_SERVICES_H_
+#pragma once
 
+#include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <bhand_msgs/srv/finger_position.hpp>
+#include <bhand_msgs/srv/finger_velocity.hpp>
+#include <bhand_msgs/srv/grasp_position.hpp>
+#include <bhand_msgs/srv/grasp_velocity.hpp>
+#include <bhand_msgs/srv/spread_position.hpp>
+#include <bhand_msgs/srv/spread_velocity.hpp>
+
+namespace wam_node
+{
 class BhandServices : public rclcpp::Node
 {
+  private:
     BARRETT_UNITS_FIXED_SIZE_TYPEDEFS;
+
+    template <class SRV>
+    using srv_p         = typename rclcpp::Service<SRV>::SharedPtr;
+    template <class SRV>
+    using req_p         = std::shared_ptr<typename SRV::Request>;
+    template <class SRV>
+    using res_p         = std::shared_ptr<typename SRV::Response>;
+    using hdr_p         = std::shared_ptr<rmw_request_id_t>;
+
+    using trigger_t     = std_srvs::srv::Trigger;
+    using finger_pos_t  = bhand_msgs::srv::FingerPosition;
+    using grasp_pos_t   = bhand_msgs::srv::GraspPosition;
+    using spread_pos_t  = bhand_msgs::srv::SpreadPosition;
+    using finger_vel_t  = bhand_msgs::srv::FingerVelocity;
+    using grasp_vel_t   = bhand_msgs::srv::GraspVelocity;
+    using spread_vel_t  = bhand_msgs::srv::SpreadVelocity;
+
   public:
-    explicit BhandServices(Hand& hand)
-        :Node("BhandServices"), hand_(hand)
+    explicit BhandServices(barrett::Hand& hand)
+        :Node("BhandServices"),
+         hand_(hand)
     {
       // BarrettHand Idle callback
         auto bhand_idle_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<std_srvs::srv::Trigger::Request>
-                   request,
-                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<trigger_t> request, res_p<trigger_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
                 (void)request;
-                RCLCPP_INFO(this->get_logger(), "Idling Barrett Hand");
-                this->hand_.idle();
+                RCLCPP_INFO(get_logger(), "Idling Barrett Hand");
+                hand_.idle();
                 response->success = true;
             };
 
       // BarrettHand Finger Position Callback
         auto finger_position_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<bhand_msgs::srv::FingerPosition::Request>
-                   request,
-                   std::shared_ptr<bhand_msgs::srv::FingerPosition::Response>
-                   response) -> void
+            [this](const hdr_p request_header,
+                   const req_p<finger_pos_t> request,
+                   res_p<finger_pos_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
-                RCLCPP_INFO(this->get_logger(),
+                RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand to Finger Positions %.3f, %.3f, %.3f radians",
                             request->position[0], request->position[1],
                             request->position[2]);
-                this->hand_.trapezoidalMove(Hand::jp_type(request->position[0],
-                                                          request->position[1],
-                                                          request->position[2],
-                                                          0.0),
-                                            Hand::GRASP, false);
+                hand_.trapezoidalMove(
+                    barrett::Hand::jp_type(request->position[0],
+                                           request->position[1],
+                                           request->position[2],
+                                           0.0),
+                    barrett::Hand::GRASP, false);
                 response->response = true;
             };
 
       // BarrettHand Grasp Position Callback
         auto grasp_position_cb =
             [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<bhand_msgs::srv::GraspPosition::Request>
-                   request,
-                   std::shared_ptr<bhand_msgs::srv::GraspPosition::Response> response)
-            -> void
+                   const req_p<grasp_pos_t> request,
+                   res_p<grasp_pos_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
-                RCLCPP_INFO(this->get_logger(),
+                RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand Grasp: %.3f radians",
                             request->position);
-                this->hand_.trapezoidalMove(Hand::jp_type(request->position),
-                                            Hand::GRASP, false);
+                hand_.trapezoidalMove(
+                    barrett::Hand::jp_type(request->position),
+                    barrett::Hand::GRASP, false);
                 response->response = true;
             };
 
       // BarrettHand Spread Position Callback
         auto spread_position_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<bhand_msgs::srv::SpreadPosition::Request>
-                   request,
-                   std::shared_ptr<bhand_msgs::srv::SpreadPosition::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<spread_pos_t> request,
+                   res_p<spread_pos_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
-                RCLCPP_INFO(this->get_logger(), "Moving BarrettHand Spread: %.3f radians",
+                RCLCPP_INFO(get_logger(), "Moving BarrettHand Spread: %.3f radians",
                             request->position);
-                this->hand_.trapezoidalMove(Hand::jp_type(request->position),
-                                            Hand::SPREAD, false);
+                hand_.trapezoidalMove(
+                    barrett::Hand::jp_type(request->position),
+                    barrett::Hand::SPREAD, false);
                 response->response = true;
             };
 
       // BarrettHand Finger Velocity Callback
         auto finger_velocity_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<bhand_msgs::srv::FingerVelocity::Request>
-                   request,
-                   std::shared_ptr<bhand_msgs::srv::FingerVelocity::Response>
-                   response) -> void
+            [this](const hdr_p request_header,
+                   const req_p<finger_vel_t> request,
+                   res_p<finger_vel_t> response)
              {
                /*To avoid compiler warning for unused variable*/
                  (void)request_header;
-                 RCLCPP_INFO(this->get_logger(),
+                 RCLCPP_INFO(get_logger(),
                              "Moving BarrettHand Finger Velocities: %.3f, %.3f, %3.f rad/s",
                              request->velocity[0], request->velocity[1],
                              request->velocity[2]);
-                 this->hand_.velocityMove(Hand::jv_type(request->velocity[0],
-                                                        request->velocity[1],
-                                                        request->velocity[2],
-                                                        0.0),
-                                          Hand::GRASP);
+                 hand_.velocityMove(
+                     barrett::Hand::jv_type(request->velocity[0],
+                                            request->velocity[1],
+                                            request->velocity[2],
+                                            0.0),
+                     barrett::Hand::GRASP);
                 response->response = true;
             };
 
       // BarrettHand Grasp Velocity Callback
         auto grasp_velocity_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<bhand_msgs::srv::GraspVelocity::Request>
-                   request,
-                   std::shared_ptr<bhand_msgs::srv::GraspVelocity::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<grasp_vel_t> request,
+                   res_p<grasp_vel_t> response) -> void
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
-                RCLCPP_INFO(this->get_logger(),
+                RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand Grasp Velocity: %.3f rad/s",
                             request->velocity);
-                this->hand_.velocityMove(Hand::jv_type(request->velocity),
-                                         Hand::GRASP);
+                hand_.velocityMove(barrett::Hand::jv_type(request->velocity),
+                                   barrett::Hand::GRASP);
                 response->response = true;
             };
 
       // BarrettHand Spread Velocity Callback
         auto spread_velocity_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<bhand_msgs::srv::SpreadVelocity::Request>
-                   request,
-                   std::shared_ptr<bhand_msgs::srv::SpreadVelocity::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<spread_vel_t> request,
+                   res_p<spread_vel_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
-                RCLCPP_INFO(this->get_logger(),
+                RCLCPP_INFO(get_logger(),
                             "Moving BarrettHand Spread Velocity: %.3f rad/s",
                             request->velocity);
-                this->hand_.velocityMove(Hand::jv_type(request->velocity),
-                                         Hand::SPREAD);
+                hand_.velocityMove(barrett::Hand::jv_type(request->velocity),
+                                   barrett::Hand::SPREAD);
                 response->response = true;
             };
 
       // BarrettHand Open Grasp Callback
         auto open_grasp_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<trigger_t> request, res_p<trigger_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
                 (void)request;
-                RCLCPP_INFO(this->get_logger(),
-                            "Opening the BarrettHand Grasp");
-                this->hand_.open(Hand::GRASP, false);
+                RCLCPP_INFO(get_logger(), "Opening the BarrettHand Grasp");
+                hand_.open(barrett::Hand::GRASP, false);
                 response->success = true;
             };
 
         auto close_grasp_cb =
             [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
-            -> void
+                   const req_p<trigger_t> request, res_p<trigger_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
                 (void) request;
-                RCLCPP_INFO(this->get_logger(),
-                            "Closing the BarrettHand Grasp");
-                this->hand_.close(Hand::GRASP, false);
+                RCLCPP_INFO(get_logger(), "Closing the BarrettHand Grasp");
+                hand_.close(barrett::Hand::GRASP, false);
                 response->success = true;
             };
 
       // BarrettHand Open Spread Callback
         auto open_spread_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<trigger_t> request, res_p<trigger_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
                 (void) request;
-                RCLCPP_INFO(this->get_logger(),
-                            "Opening the BarrettHand Spread");
-                this->hand_.open(Hand::SPREAD, false);
+                RCLCPP_INFO(get_logger(), "Opening the BarrettHand Spread");
+                hand_.open(barrett::Hand::SPREAD, false);
                 response->success = true;
             };
 
       // BarrettHand Close Spread Callback
         auto close_spread_cb =
-            [this](const std::shared_ptr<rmw_request_id_t> request_header,
-                   const std::shared_ptr<std_srvs::srv::Trigger::Request>
-                   request,
-                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
-            -> void
+            [this](const hdr_p request_header,
+                   const req_p<trigger_t> request, res_p<trigger_t> response)
             {
               /*To avoid compiler warning for unused variable*/
                 (void)request_header;
                 (void) request;
-                RCLCPP_INFO(this->get_logger(),
-                            "Closing the BarrettHand Spread");
-                this->hand_.close(Hand::SPREAD, false);
+                RCLCPP_INFO(get_logger(), "Closing the BarrettHand Spread");
+                hand_.close(barrett::Hand::SPREAD, false);
                 response->success = true;
             };
 
       // Create Services
         finger_position_srv_
-            = create_service<bhand_msgs::srv::FingerPosition>(
-                "/bhand/moveToFingerPositions", finger_position_cb);
+            = create_service<finger_pos_t>("/bhand/moveToFingerPositions",
+                                           finger_position_cb);
         grasp_position_srv_
-            = create_service<bhand_msgs::srv::GraspPosition>(
-                "/bhand/moveToGraspPosition", grasp_position_cb);
+            = create_service<grasp_pos_t>("/bhand/moveToGraspPosition",
+                                          grasp_position_cb);
         spread_position_srv_
-            = create_service<bhand_msgs::srv::SpreadPosition>(
-                "/bhand/moveToSpreadPosition", spread_position_cb);
+            = create_service<spread_pos_t>("/bhand/moveToSpreadPosition",
+                                           spread_position_cb);
         finger_velocity_srv_
-            = create_service<bhand_msgs::srv::FingerVelocity>(
-                "/bhand/moveToFingerVelocities", finger_velocity_cb);
+            = create_service<finger_vel_t>("/bhand/moveToFingerVelocities",
+                                           finger_velocity_cb);
         grasp_velocity_srv_
-            = create_service<bhand_msgs::srv::GraspVelocity>(
-                "/bhand/moveToGraspVelocity", grasp_velocity_cb);
+            = create_service<grasp_vel_t>("/bhand/moveToGraspVelocity",
+                                          grasp_velocity_cb);
         spread_velocity_srv_
-            = create_service<bhand_msgs::srv::SpreadVelocity>(
-                "/bhand/moveToSpreadVelocity", spread_velocity_cb);
-        idle_srv_
-            = create_service<std_srvs::srv::Trigger>(
-                "/bhand/idle", bhand_idle_cb);
-        open_grasp_srv_
-            = create_service<std_srvs::srv::Trigger>(
-                "/bhand/openGrasp", open_grasp_cb);
-        close_grasp_srv_
-            = create_service<std_srvs::srv::Trigger>(
-                "/bhand/closeGrasp", close_grasp_cb);
-        open_spread_srv_
-            = create_service<std_srvs::srv::Trigger>(
-                "/bhand/openSpread", open_spread_cb);
-        close_spread_srv_
-            = create_service<std_srvs::srv::Trigger>(
-                "/bhand/closeSpread", close_spread_cb);
+            = create_service<spread_vel_t>("/bhand/moveToSpreadVelocity",
+                                           spread_velocity_cb);
+        idle_srv_ = create_service<trigger_t>("/bhand/idle", bhand_idle_cb);
+        open_grasp_srv_ = create_service<trigger_t>("/bhand/openGrasp",
+                                                    open_grasp_cb);
+        close_grasp_srv_ = create_service<trigger_t>("/bhand/closeGrasp",
+                                                     close_grasp_cb);
+        open_spread_srv_ = create_service<trigger_t>("/bhand/openSpread",
+                                                     open_spread_cb);
+        close_spread_srv_ = create_service<trigger_t>("/bhand/closeSpread",
+                                                      close_spread_cb);
     }
 
   protected:
-    Hand& hand_;
-    rclcpp::Service<bhand_msgs::srv::FingerPosition>::SharedPtr finger_position_srv_;
-    rclcpp::Service<bhand_msgs::srv::GraspPosition>::SharedPtr grasp_position_srv_;
-    rclcpp::Service<bhand_msgs::srv::SpreadPosition>::SharedPtr spread_position_srv_;
-    rclcpp::Service<bhand_msgs::srv::FingerVelocity>::SharedPtr finger_velocity_srv_;
-    rclcpp::Service<bhand_msgs::srv::GraspVelocity>::SharedPtr grasp_velocity_srv_;
-    rclcpp::Service<bhand_msgs::srv::SpreadVelocity>::SharedPtr spread_velocity_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr idle_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr open_grasp_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr close_grasp_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr open_spread_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr close_spread_srv_;
+    barrett::Hand&      hand_;
+    srv_p<finger_pos_t> finger_position_srv_;
+    srv_p<grasp_pos_t>  grasp_position_srv_;
+    srv_p<spread_pos_t> spread_position_srv_;
+    srv_p<finger_vel_t> finger_velocity_srv_;
+    srv_p<grasp_vel_t>  grasp_velocity_srv_;
+    srv_p<spread_vel_t> spread_velocity_srv_;
+    srv_p<trigger_t>    idle_srv_;
+    srv_p<trigger_t>    open_grasp_srv_;
+    srv_p<trigger_t>    close_grasp_srv_;
+    srv_p<trigger_t>    open_spread_srv_;
+    srv_p<trigger_t>    close_spread_srv_;
 };
-#endif  // WAM_NODE_SRC_BHAND_SERVICES_H_
+}       // namespace wam_node
