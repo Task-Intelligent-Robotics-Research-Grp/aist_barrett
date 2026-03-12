@@ -29,7 +29,7 @@ class WamSubscribers : public rclcpp::Node
     template <class MSG>
     using sub_p = typename rclcpp::Subscription<MSG>::SharedPtr;
     template <class MSG>
-    using ptr   = typename MSG::SharedPtr;
+    using msg_cp = typename MSG::ConstSharedPtr;
 
     using time_t                  = rclcpp::Time;
     using rt_joint_pos_t          = wam_msgs::msg::RTJointPositions;
@@ -50,10 +50,10 @@ class WamSubscribers : public rclcpp::Node
 
     explicit
     WamSubscribers(barrett::systems::Wam<DOF>* wam,
-                   barrett::ProductManager& pm)
+                   barrett::systems::RealTimeExecutionManager* em)
         :Node("WamSubscribers"),
          wam_(wam),
-         pm_(pm),
+         em_(em),
          rt_joint_position_sub_(
              create_subscription<rt_joint_pos_t>(
                  "/wam/RTJointPositionCMD", 100,
@@ -108,33 +108,33 @@ class WamSubscribers : public rclcpp::Node
          ramp_(NULL, kCartesianSpeed),
          ramp1_(NULL, kCartesianSpeed)
     {
-        pm_.getExecutionManager()->startManaging(ramp_);
-        pm_.getExecutionManager()->startManaging(ramp1_);
+        em_->startManaging(ramp_);
+        em_->startManaging(ramp1_);
     }
 
   private:
-    void        rtJointPositionCb(const ptr<rt_joint_pos_t> msg);
-    void        rtLinearAngularVelocityCb(const ptr<rt_linear_angular_vel_t> msg);
-    void        rtAngularVelocityCb(const ptr<rt_angular_vel_t> msg);
-    void        rtLinearVelocityCb(const ptr<rt_linear_vel_t> msg);
-    void        rtCartPositionCb(const ptr<rt_cart_pos_t> msg);
-    void        rtCartPoseCb(const ptr<rt_cart_pose_t> msg);
-    void        rtCartOrientationCb(const ptr<rt_cart_orientation_t> msg);
-    void        rtJointVelocityCb(const ptr<rt_joint_vel_t> msg);
-    vector3_t   toRPY(Eigen::Quaterniond inquat);
+    void        rtJointPositionCb(msg_cp<rt_joint_pos_t> msg);
+    void        rtLinearAngularVelocityCb(msg_cp<rt_linear_angular_vel_t> msg);
+    void        rtAngularVelocityCb(msg_cp<rt_angular_vel_t> msg);
+    void        rtLinearVelocityCb(msg_cp<rt_linear_vel_t> msg);
+    void        rtCartPositionCb(msg_cp<rt_cart_pos_t> msg);
+    void        rtCartPoseCb(msg_cp<rt_cart_pose_t> msg);
+    void        rtCartOrientationCb(msg_cp<rt_cart_orientation_t> msg);
+    void        rtJointVelocityCb(msg_cp<rt_joint_vel_t> msg);
+    static vector3_t   toRPY(const Eigen::Quaterniond& inquat);
 
   private:
-    barrett::systems::Wam<DOF>* const   wam_;
-    barrett::ProductManager&            pm_;
+    barrett::systems::Wam<DOF>* const                 wam_;
+    barrett::systems::RealTimeExecutionManager* const em_;
 
-    sub_p<rt_joint_pos_t>               rt_joint_position_sub_;
-    sub_p<rt_joint_vel_t>               rt_joint_velocity_sub_;
-    sub_p<rt_linear_vel_t>              rt_linear_velocity_sub_;
-    sub_p<rt_angular_vel_t>             rt_angular_velocity_sub_;
-    sub_p<rt_linear_angular_vel_t>      rt_linear_angular_velocity_sub_;
-    sub_p<rt_cart_pos_t>                rt_cart_position_sub_;
-    sub_p<rt_cart_orientation_t>        rt_cart_orientation_sub_;
-    sub_p<rt_cart_pose_t>               rt_cart_pose_sub_;
+    const sub_p<rt_joint_pos_t>          rt_joint_position_sub_;
+    const sub_p<rt_joint_vel_t>          rt_joint_velocity_sub_;
+    const sub_p<rt_linear_vel_t>         rt_linear_velocity_sub_;
+    const sub_p<rt_angular_vel_t>        rt_angular_velocity_sub_;
+    const sub_p<rt_linear_angular_vel_t> rt_linear_angular_velocity_sub_;
+    const sub_p<rt_cart_pos_t>           rt_cart_position_sub_;
+    const sub_p<rt_cart_orientation_t>   rt_cart_orientation_sub_;
+    const sub_p<rt_cart_pose_t>          rt_cart_pose_sub_;
 
   //RT Status indicators
     bool                                rt_joint_position_status_;
@@ -194,7 +194,7 @@ class WamSubscribers : public rclcpp::Node
 };
 
 template<size_t DOF> typename WamSubscribers<DOF>::vector3_t
-WamSubscribers<DOF>::toRPY(Eigen::Quaterniond inquat)
+WamSubscribers<DOF>::toRPY(const Eigen::Quaterniond& inquat)
 {
     vector3_t rpy;
     tf2::Quaternion q(inquat.x(), inquat.y(), inquat.z(), inquat.w());
@@ -203,7 +203,7 @@ WamSubscribers<DOF>::toRPY(Eigen::Quaterniond inquat)
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtJointPositionCb(const ptr<rt_joint_pos_t> msg)
+WamSubscribers<DOF>::rtJointPositionCb(msg_cp<rt_joint_pos_t> msg)
 {
     if (msg->joint_states.size() != DOF)
     {
@@ -245,7 +245,7 @@ WamSubscribers<DOF>::rtJointPositionCb(const ptr<rt_joint_pos_t> msg)
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtJointVelocityCb(const ptr<rt_joint_vel_t> msg)
+WamSubscribers<DOF>::rtJointVelocityCb(msg_cp<rt_joint_vel_t> msg)
 {
   //If velocity control is activated, update values.
     if (msg->velocities.size() != DOF)
@@ -275,7 +275,7 @@ WamSubscribers<DOF>::rtJointVelocityCb(const ptr<rt_joint_vel_t> msg)
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtLinearVelocityCb(const ptr<rt_linear_vel_t> msg)
+WamSubscribers<DOF>::rtLinearVelocityCb(msg_cp<rt_linear_vel_t> msg)
 {
     if (!rt_linear_velocity_status_)
     {
@@ -325,7 +325,7 @@ WamSubscribers<DOF>::rtLinearVelocityCb(const ptr<rt_linear_vel_t> msg)
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtAngularVelocityCb(const ptr<rt_angular_vel_t> msg)
+WamSubscribers<DOF>::rtAngularVelocityCb(msg_cp<rt_angular_vel_t> msg)
 {
   //Initialize systems
     if (!rt_angular_velocity_status_)
@@ -384,7 +384,7 @@ WamSubscribers<DOF>::rtAngularVelocityCb(const ptr<rt_angular_vel_t> msg)
 
 template <size_t DOF> void
 WamSubscribers<DOF>::rtLinearAngularVelocityCb(
-    const ptr<rt_linear_angular_vel_t> msg)
+    msg_cp<rt_linear_angular_vel_t> msg)
 {
   // If velocity control is activated, update values.
     if (!rt_linear_angular_velocity_status_)
@@ -486,7 +486,7 @@ WamSubscribers<DOF>::rtLinearAngularVelocityCb(
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtCartPositionCb(const ptr<rt_cart_pos_t> msg)
+WamSubscribers<DOF>::rtCartPositionCb(msg_cp<rt_cart_pos_t> msg)
 {
     if (!rt_cart_position_status_)
     {
@@ -526,7 +526,7 @@ WamSubscribers<DOF>::rtCartPositionCb(const ptr<rt_cart_pos_t> msg)
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtCartOrientationCb(const ptr<rt_cart_orientation_t> msg)
+WamSubscribers<DOF>::rtCartOrientationCb(msg_cp<rt_cart_orientation_t> msg)
 {
     if (!rt_cart_orientation_status_)
     {
@@ -560,7 +560,7 @@ WamSubscribers<DOF>::rtCartOrientationCb(const ptr<rt_cart_orientation_t> msg)
 }
 
 template <size_t DOF> void
-WamSubscribers<DOF>::rtCartPoseCb(const ptr<rt_cart_pose_t> msg)
+WamSubscribers<DOF>::rtCartPoseCb(msg_cp<rt_cart_pose_t> msg)
 {
     if (!rt_cart_pose_status_)
     {
@@ -640,10 +640,9 @@ WamSubscribers<DOF>::startLogging()
         printf("ERROR: Couldn't create temporary file!\n");
     }
     barrett::systems::PeriodicDataLogger<tuple_type>
-        logger(pm_.getExecutionManager(),
+        logger(em_,
                new barrett::log::RealTimeWriter<tuple_type>(
-                   tmpFile,
-                   PERIOD_MULTIPLIER * pm_.getExecutionManager()->getPeriod()),
+                   tmpFile, PERIOD_MULTIPLIER * em_->getPeriod()),
                PERIOD_MULTIPLIER);
 
     ramp_.start();

@@ -33,12 +33,12 @@ class WamPublishers : public rclcpp::Node
     using bool_t        = std_msgs::msg::Bool;
     using pose_t        = geometry_msgs::msg::PoseStamped;
     using twist_t       = geometry_msgs::msg::TwistStamped;
-
-    using vector3_t     = barrett::math::Vector<3>::type;
+    using vector3_t     = geometry_msgs::msg::Vector3;
+    using quaternion_t  = geometry_msgs::msg::Quaternion;
 
   public:
-    explicit WamPublishers(barrett::systems::Wam<DOF>* wam,
-                           barrett::Hand* hand)
+    explicit
+    WamPublishers(barrett::systems::Wam<DOF>* wam, barrett::Hand* hand)
         :Node("WamPublishers"), wam_(wam), hand_(hand), first_publish_(true),
          joint_state_pub_(
              create_publisher<joint_state_t>("/joint_states", 100)),
@@ -62,62 +62,45 @@ class WamPublishers : public rclcpp::Node
     }
 
     void        publishJointState();
-    void        publishCartPose();
-    void        publishToolVelocity();
-    void        publishJointVelocities();
+    void        publishToolPoseAndVelocity();
 
   private:
-  /** Returns Tool Velocity.
-   * Tool Velocity =
-   * (current_tool_pose_-previous_tool_pose_)/(current_velocity_pub_time_-prev_velocity_pub_time_)
-   */
-    twist_t     calcToolVelocity();
-  // Simple Function for converting Quaternion to RPY
-    vector3_t   toRPY(Eigen::Quaterniond inquat);
+    static vector3_t    toRPY(const quaternion_t& q);
 
   private:
     barrett::systems::Wam<DOF>* const   wam_;
     barrett::Hand* const                hand_;
+
     bool                                first_publish_;
-    // cf_type cf_;
-    // ct_type ct_;
+    joint_state_t                       joint_state_;
+    pose_t                              prev_pose_;
+    const pub_p<joint_state_t>          joint_state_pub_;
+    const pub_p<pose_t>                 tool_pose_pub_;
+    const pub_p<twist_t>                tool_velocity_pub_;
+    const pub_p<bool_t>                 trajectory_status_pub_;
 
-    const pub_p<joint_state_t>  joint_state_pub_;
-    const pub_p<pose_t>         tool_pose_pub_;
-    const pub_p<twist_t>        tool_velocity_pub_;
-    const pub_p<bool_t>         trajectory_status_pub_;
-
-  // Libbarrett Data Types
-    pose_type                   current_tool_pose_;
-    pose_type                   prev_tool_pose_;
-
-  // ROS2 Data Types
-    rclcpp::Time                current_velocity_pub_time_,
-                                prev_velocity_pub_time_;
-    joint_state_t               joint_state_;
-    joint_state_t               joint_velocity_;
-    timer_t                     joint_state_pub_timer_,
-                                joint_velocity_pub_timer_,
-                                tool_pose_pub_timer_,
-                                tool_velocity_pub_timer_;
+    timer_t                             pub_timer_;
 };
 
 template <size_t DOF> typename WamPublishers<DOF>::vector3_t
-WamPublishers<DOF>::toRPY(Eigen::Quaterniond inquat)
+WamPublishers<DOF>::toRPY(const quaternion_t& q)
 {
     vector3_t   rpy;
-    tf2::Quaternion q(inquat.x(), inquat.y(), inquat.z(), inquat.w());
-    tf2::Matrix3x3(q).getRPY(rpy[0], rpy[1], rpy[2]);
+    tf2::Matrix3x3(tf2::Quaternion(q.x, q.y, q.z, q.w)).getRPY(rpy.x,
+                                                               rpy.y, rpy.z);
     return rpy;
 }
 
 template <size_t DOF> void
 WamPublishers<DOF>::publishJointState()
 {
-    int         no_zeros = 0;
+  // Get arm joint states and current time
     const auto& current_joint_position = wam_->getJointPositions();
     const auto& current_joint_velocity = wam_->getJointVelocities();
     const auto& current_joint_torque   = wam_->getJointTorques();
+    joint_state_.header.stamp = rclcpp::Node::now();
+
+    int         no_zeros = 0;
     for (size_t i = 0; i < DOF; ++i)
     {
         joint_state_.position.at(i) = current_joint_position(i);
@@ -131,11 +114,12 @@ WamPublishers<DOF>::publishJointState()
         }
     }
 
+  // Publish trajectory status
     bool_t      trajectory_status;
     trajectory_status.data = (no_zeros != DOF);
     trajectory_status_pub_->publish(trajectory_status);
 
-  // If hand is present, publish hand joint states
+  // If hand is present, append hand joint states
     if (hand_)
     {
         hand_->update();
@@ -149,92 +133,62 @@ WamPublishers<DOF>::publishJointState()
         joint_state_.position[DOF]   =  hi[3];
         joint_state_.position[DOF+1] = -hi[3];
     }
-    joint_state_.header.stamp = rclcpp::Node::now();
-    joint_state_pub_->publish(joint_state_);
+
+  // Publish joint states
+    joint_state_pub_ ->publish(joint_state_);
 }
 
 template <size_t DOF> void
-WamPublishers<DOF>::publishCartPose()
+WamPublishers<DOF>::publishToolPoseAndVelocity()
 {
-    pose_t      pose;
-    pose.header.stamp = rclcpp::Node::now();
-    current_tool_pose_ = wam_->getToolPose();
-    pose.pose.position.x = current_tool_pose_.get<0>()(0);
-    pose.pose.position.y = current_tool_pose_.get<0>()(1);
-    pose.pose.position.z = current_tool_pose_.get<0>()(2);
-    pose.pose.orientation.x = current_tool_pose_.get<1>().x();
-    pose.pose.orientation.y = current_tool_pose_.get<1>().y();
-    pose.pose.orientation.z = current_tool_pose_.get<1>().z();
-    pose.pose.orientation.w = current_tool_pose_.get<1>().w();
-
+  // Create and publish cartesian pose
+    pose_t              pose;
+    const pose_type     tool_pose = wam_->getToolPose();
+    pose.header.stamp       = rclcpp::Node::now();
+    pose.pose.position.x    = tool_pose.get<0>()(0);
+    pose.pose.position.y    = tool_pose.get<0>()(1);
+    pose.pose.position.z    = tool_pose.get<0>()(2);
+    pose.pose.orientation.x = tool_pose.get<1>().x();
+    pose.pose.orientation.y = tool_pose.get<1>().y();
+    pose.pose.orientation.z = tool_pose.get<1>().z();
+    pose.pose.orientation.w = tool_pose.get<1>().w();
     tool_pose_pub_->publish(pose);
-}
 
-template <size_t DOF> geometry_msgs::msg::TwistStamped
-WamPublishers<DOF>::calcToolVelocity()
-{
-    twist_t twist;
-    twist.twist.linear.x
-        = (current_tool_pose_.get<0>()(0) - prev_tool_pose_.get<0>()(0)) /
-          ((current_velocity_pub_time_.nanoseconds() -
-            prev_velocity_pub_time_.nanoseconds())) * 1000000000; //convert nanoseconds to seconds
-    twist.twist.linear.y
-        = (current_tool_pose_.get<0>()(1) - prev_tool_pose_.get<0>()(1)) /
-          ((current_velocity_pub_time_.nanoseconds() -
-            prev_velocity_pub_time_.nanoseconds())) * 1000000000;
-    twist.twist.linear.z
-        = (current_tool_pose_.get<0>()(2) - prev_tool_pose_.get<0>()(2)) /
-          ((current_velocity_pub_time_.nanoseconds() -
-            prev_velocity_pub_time_.nanoseconds())) * 1000000000;
-
-    const auto  current_tool_rpy  = toRPY(current_tool_pose_.get<1>());
-    const auto  previous_tool_rpy = toRPY(prev_tool_pose_.get<1>());
-    twist.twist.angular.x
-        = (current_tool_rpy(0) - previous_tool_rpy(0)) /
-          ((current_velocity_pub_time_.nanoseconds() -
-            prev_velocity_pub_time_.nanoseconds())) * 1000000000;
-    twist.twist.angular.y
-        = (current_tool_rpy(1) - previous_tool_rpy(1)) /
-          ((current_velocity_pub_time_.nanoseconds() -
-            prev_velocity_pub_time_.nanoseconds())) * 1000000000;
-    twist.twist.angular.z
-        = (current_tool_rpy(2) - previous_tool_rpy(2)) /
-          ((current_velocity_pub_time_.nanoseconds() -
-            prev_velocity_pub_time_.nanoseconds())) * 1000000000;
-    twist.header.stamp = rclcpp::Node::now();
-
-    return twist;
-}
-
-template <size_t DOF> void
-WamPublishers<DOF>::publishToolVelocity()
-{
-    twist_t twist;
-
+  // Create and publish twist
+    twist_t     twist;
+    twist.header.stamp = pose.header.stamp;
     if (first_publish_)
     {
-        first_publish_ = false;
-
-        prev_tool_pose_ = current_tool_pose_;
-        prev_velocity_pub_time_ = rclcpp::Node::now();
-        twist.header.stamp = rclcpp::Node::now();
-        twist.twist.linear.x = 0;
-        twist.twist.linear.y = 0;
-        twist.twist.linear.z = 0;
+        twist.twist.linear.x  = 0;
+        twist.twist.linear.y  = 0;
+        twist.twist.linear.z  = 0;
         twist.twist.angular.x = 0;
         twist.twist.angular.y = 0;
         twist.twist.angular.z = 0;
 
-        tool_velocity_pub_->publish(twist);
+        first_publish_ = false;
     }
     else
     {
-        current_velocity_pub_time_ = rclcpp::Node::now();
+        using time_t = rclcpp::Time;
 
-        tool_velocity_pub_->publish(calcToolVelocity());
-
-        prev_tool_pose_ = current_tool_pose_;
-        prev_velocity_pub_time_ = current_velocity_pub_time_;
+        const auto  dt = (time_t(pose      .header.stamp) -
+                          time_t(prev_pose_.header.stamp)).seconds();
+        twist.twist.linear.x  = (pose      .pose.position.x -
+                                 prev_pose_.pose.position.x) / dt;
+        twist.twist.linear.y  = (pose      .pose.position.y -
+                                 prev_pose_.pose.position.y) / dt;
+        twist.twist.linear.z  = (pose      .pose.position.z -
+                                 prev_pose_.pose.position.z) / dt;
+        const auto  rpy       = toRPY(pose      .pose.orientation);
+        const auto  prev_rpy  = toRPY(prev_pose_.pose.orientation);
+        twist.twist.angular.x = (rpy.x - prev_rpy.x) / dt;
+        twist.twist.angular.y = (rpy.y - prev_rpy.y) / dt;
+        twist.twist.angular.z = (rpy.z - prev_rpy.z) / dt;
     }
+    tool_velocity_pub_->publish(twist);
+
+  // Keep curerent pose for calculating next velocity
+    prev_pose_ = pose;
 }
 }       // namespace wam_node

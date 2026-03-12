@@ -15,7 +15,7 @@ namespace wam_node
 // Wait until desired mode reached
 static void
 customWaitForMode(enum barrett::SafetyModule::SafetyMode mode,
-                  barrett::SafetyModule* sm,
+                  const barrett::SafetyModule* sm,
                   std::shared_ptr<rclcpp::Node> node,
                   double pollingPeriod_s = 0.25)
 {
@@ -42,7 +42,7 @@ customWaitForWAM(barrett::ProductManager& pm,
     if (!pm.foundSafetyModule())
         return false;
 
-    const auto  sm = pm.getSafetyModule();
+    const auto* sm = pm.getSafetyModule();
     customWaitForMode(barrett::SafetyModule::IDLE, sm, node);
     if (!pm.foundWam())
     {
@@ -81,7 +81,8 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
 
     if (wam)
     {
-        const auto   sm = pm.getSafetyModule();
+        const auto sm = pm.getSafetyModule();
+        const auto em = pm.getExecutionManager();
 
         wam->gravityCompensate(true);
         sm->setVelocityLimit(2);
@@ -102,12 +103,12 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
           //WAMPublisher publishes hand and WAM joint states.
             auto publish_node = std::make_shared<WamPublishers<DOF>>(wam,
                                                                      hand);
-            auto service_node = std::make_shared<WamServices<DOF>>(wam, pm,
+            auto service_node = std::make_shared<WamServices<DOF>>(wam, sm,
                                                                    hand);
             auto bhand_publisher_node = std::make_shared<BhandPublishers>(hand,
                                                                           wam);
             auto subscriber_node = std::make_shared<WamSubscribers<DOF>>(wam,
-                                                                         pm);
+                                                                         em);
             auto bhand_services_node = std::make_shared<BhandServices>(hand);
             rclcpp::executors::MultiThreadedExecutor executor;
             std::shared_ptr<FtsNode> fts_node;
@@ -128,8 +129,7 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
             {
                 executor.spin_some();
                 publish_node->publishJointState();
-                publish_node->publishCartPose();
-                publish_node->publishToolVelocity();
+                publish_node->publishToolPoseAndVelocity();
                 loop_rate.sleep();
             }
             customWaitForMode(barrett::SafetyModule::IDLE, sm, publish_node);
@@ -139,10 +139,10 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
         {
             auto publish_node = std::make_shared<WamPublishers<DOF>>(wam,
                                                                      hand);
-            auto service_node = std::make_shared<WamServices<DOF>>(wam, pm,
+            auto service_node = std::make_shared<WamServices<DOF>>(wam, sm,
                                                                    hand);
             auto subscriber_node = std::make_shared<WamSubscribers<DOF>>(wam,
-                                                                         pm);
+                                                                         em);
             rclcpp::executors::MultiThreadedExecutor executor;
             std::shared_ptr<FtsNode> fts_node;
             if (fts)
@@ -160,8 +160,7 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
             {
                 executor.spin_some();
                 publish_node->publishJointState();
-                publish_node->publishCartPose();
-                publish_node->publishToolVelocity();
+                publish_node->publishToolPoseAndVelocity();
                 loop_rate.sleep();
             }
             customWaitForMode(barrett::SafetyModule::IDLE, sm, publish_node);
