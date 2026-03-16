@@ -295,17 +295,18 @@ BarrettHandController::BarrettHandController(
     _hand->initialize();
     _hand->update();
 
-    const auto	prefix = ddynamic_reconfigure2::declare_read_only_parameter(
-                             this, "prefix", "bhand_");
+    const auto
+        device_name = ddynamic_reconfigure2::declare_read_only_parameter(
+                          this, "device_name", "bhand");
     _joint_state.name.resize(8);
-    _joint_state.name[0] = prefix + "j11_joint";
-    _joint_state.name[1] = prefix + "j21_joint";
-    _joint_state.name[2] = prefix + "j12_joint";
-    _joint_state.name[3] = prefix + "j22_joint";
-    _joint_state.name[4] = prefix + "j32_joint";
-    _joint_state.name[5] = prefix + "j13_joint";
-    _joint_state.name[6] = prefix + "j23_joint";
-    _joint_state.name[7] = prefix + "j33_joint";
+    _joint_state.name[0] = device_name + "_j11_joint";
+    _joint_state.name[1] = device_name + "_j21_joint";
+    _joint_state.name[2] = device_name + "_j12_joint";
+    _joint_state.name[3] = device_name + "_j22_joint";
+    _joint_state.name[4] = device_name + "_j32_joint";
+    _joint_state.name[5] = device_name + "_j13_joint";
+    _joint_state.name[6] = device_name + "_j23_joint";
+    _joint_state.name[7] = device_name + "_j33_joint";
     _joint_state.position.resize(_joint_state.name.size());
     _joint_state.velocity.resize(_joint_state.name.size());
     _joint_state.effort  .resize(_joint_state.name.size());

@@ -9,14 +9,7 @@ from aist_bringup.launch_common import declare_launch_arguments
 
 launch_arguments = [
     {
-        'name':        'param_file',
-        'default':     PathJoinSubstitution(
-                           [FindPackageShare('aist_fastening_tools'),
-                            'config', 'default.yaml']),
-        'description': 'absolute path to configuration file'
-    },
-    {
-        'name':        'name',
+        'name':        'device_name',
         'default':     'barrett_hand',
         'description': 'device name'
     },
@@ -42,10 +35,10 @@ launch_arguments = [
 def launch_setup(context):
     composable_nodes = [
         ComposableNode(
-            name=LaunchConfiguration('name'),
+            name=[LaunchConfiguration('device_name'), '_controller'],
             package='aist_barrett',
             plugin='aist_barrett::BarrettHandController',
-            parameters=[LaunchConfiguration('param_file')],
+            parameters=[{'device_name', LaunchConfiguration('device_name')}],
             extra_arguments=[{'use_intra_process_comms': True}])
     ]
 
