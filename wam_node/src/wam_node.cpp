@@ -105,8 +105,7 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
                                                                      hand);
             auto service_node = std::make_shared<WamServices<DOF>>(wam, sm,
                                                                    hand);
-            auto bhand_publisher_node = std::make_shared<BhandPublishers>(hand,
-                                                                          wam);
+            auto bhand_publisher_node = std::make_shared<BhandPublishers>(hand);
             auto subscriber_node = std::make_shared<WamSubscribers<DOF>>(wam,
                                                                          em);
             auto bhand_services_node = std::make_shared<BhandServices>(hand);
@@ -172,8 +171,7 @@ wam_main(barrett::ProductManager& pm, barrett::systems::Wam<DOF>* wam,
         hand->initialize();
         hand->update();
         auto bhand_services_node = std::make_shared<BhandServices>(hand);
-        auto bhand_publisher_node = std::make_shared<BhandPublishers>(hand,
-                                                                      wam);
+        auto bhand_publisher_node = std::make_shared<BhandPublishers>(hand);
         rclcpp::executors::MultiThreadedExecutor executor;
         std::shared_ptr<FtsNode> fts_node;
         if (fts)

@@ -24,20 +24,16 @@ class BhandPublishers : public rclcpp::Node
     using finger_tip_torque_t   = bhand_msgs::msg::FingerTipTorques;
 
   public:
-    explicit BhandPublishers(barrett::Hand* hand, bool found_wam)
+    explicit BhandPublishers(barrett::Hand* hand)
         :Node("BhandPublishers"),
          hand_(hand),
          joint_state_(),
          joint_state_pub_(
-             found_wam ?
-             create_publisher<joint_state_t>("/joint_states", 100) :
-             nullptr),
+             create_publisher<joint_state_t>("/joint_states", 100)),
          joint_state_pub_timer_(
-             found_wam ?
              create_wall_timer(
                  2ms,
-                 std::bind(&BhandPublishers::publishJointPositions, this)) :
-             nullptr),
+                 std::bind(&BhandPublishers::publishJointPositions, this))),
          tactile_state_pub_(
              hand_->hasTactSensors() ?
              create_publisher<tactile_states_t>("/bhand/TactileStates", 100) :
@@ -53,8 +49,10 @@ class BhandPublishers : public rclcpp::Node
                                          this)))
     {
       //kBhandJointNames defined in wam_publishers.h
-        joint_state_.position.resize(kBhandJointNames.size());
         joint_state_.name = kBhandJointNames;
+        joint_state_.position.resize(kBhandJointNames.size());
+        joint_state_.velocity.resize(kBhandJointNames.size());
+        joint_state_.effort.resize(kBhandJointNames.size());
 
         if (tactile_state_pub_)
             RCLCPP_INFO(get_logger(), "Found Tactile Sensors");
@@ -94,6 +92,7 @@ BhandPublishers::publishJointPositions()
     joint_state_.position[0] = -hi[3];
     joint_state_.position[1] =  hi[3];
 
+    joint_state_.header.stamp = rclcpp::Node::now();
     joint_state_pub_->publish(joint_state_);
 }
 
