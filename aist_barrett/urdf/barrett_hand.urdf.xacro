@@ -10,9 +10,21 @@
     </xacro:macro>
 
     <xacro:property name="base_height"	value="0.025"/>
-    <xacro:property name="half_tread"	value="0.02475"/>
-    <xacro:property name="medial_x"	value="0.0505"/>
-    <xacro:property name="medial_z"	value="0.034"/>
+    <xacro:property name="palm_height"	value="0.061"/>
+    <xacro:property name="tip_height"	value="0.156"/>
+    <xacro:property name="half_tread"	value="0.025"/>
+    <xacro:property name="medial_x"	value="0.050"/>
+    <xacro:property name="medial_y"	value="-0.0001"/>
+    <xacro:property name="medial_z"	value="0.035"/>
+
+    <xacro:macro name="set_frame" params="name parent *origin">
+      <joint name="${name}_joint" type="fixed">
+	<parent link="${parent}"/>
+	<child  link="${name}"/>
+	<xacro:insert_block name="origin"/>
+      </joint>
+      <link name="${name}"/>
+    </xacro:macro>
 
     <xacro:macro name="barrett_finger"
 		 params="prefix fingerprefix parent *origin">
@@ -20,13 +32,13 @@
 	     type="revolute">
 	<xacro:insert_block name="origin"/>
 	<parent link="${parent}"/>
-	<child  link="${prefix}${fingerprefix}medial"/>
+	<child  link="${prefix}${fingerprefix}medial_link"/>
 	<axis xyz="0 0 1"/>
 	<limit effort="30" velocity="1.5" lower="0.0" upper="${radians(140)}"/>
 	<joint_properties damping="100.0" friction="1000.0"/>
 	<dynamics damping="1000"/>
       </joint >
-      <link name="${prefix}${fingerprefix}medial">
+      <link name="${prefix}${fingerprefix}medial_link">
 	<inertial>
   	  <mass value="0.001"/>
 	  <origin xyz="0 0 0"/>
@@ -56,17 +68,17 @@
       <joint name="${prefix}${fingerprefix}distal_joint"
 	     type="revolute">
 	<origin xyz="0.070 0.0 0.0" rpy="0.0 0.0 0.0"/>
-	<parent link="${prefix}${fingerprefix}medial"/>
-	<child  link="${prefix}${fingerprefix}distal"/>
+	<parent link="${prefix}${fingerprefix}medial_link"/>
+	<child  link="${prefix}${fingerprefix}distal_link"/>
 	<axis xyz="0 0 1"/>
 	<mimic joint="${prefix}${fingerprefix}finger_joint"
-	       multiplier="${80.0/140.0}" offset="0"/>
+	       multiplier="${45.0/140.0}" offset="${radians(35)}"/>
 	<limit effort="30" velocity="1.5"
 	       lower="0.0" upper="${radians(80)}"/>
 	<joint_properties damping="100.0" friction="1000.0"/>
 	<dynamics damping="1000"/>
       </joint >
-      <link name="${prefix}${fingerprefix}distal">
+      <link name="${prefix}${fingerprefix}distal_link">
 	<inertial>
   	  <mass value="0.001"/>
 	  <origin xyz="0 0 0"/>
@@ -92,10 +104,15 @@
 	  <contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
 	</collision>
       </link>
+
+      <xacro:set_frame name="${prefix}${fingerprefix}tip_link"
+		       parent="${prefix}${fingerprefix}distal_link">
+	<origin xyz="0.058 0 0" rpy="0 ${radians(-90)} 0"/>
+      </xacro:set_frame>
     </xacro:macro>
 
     <xacro:macro name="barrett_proximal" params="prefix fingerprefix">
-      <link name="${prefix}${fingerprefix}proximal">
+      <link name="${prefix}${fingerprefix}proximal_link">
 	<inertial>
   	  <mass value="0.001"/>
 	  <origin xyz="0 0 0"/>
@@ -126,17 +143,17 @@
     <!-- Base -->
     <joint name="${prefix}base_joint" type="fixed">
       <parent link="${parent_link}"/>
-      <child  link="${prefix}base"/>
+      <child  link="${prefix}base_link"/>
       <xacro:insert_block name="origin"/>
     </joint>
-    <link name="${prefix}base">
+    <link name="${prefix}base_link">
       <inertial>
   	<mass value="0.001"/>
 	<origin xyz="0 0 0"/>
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
-	<origin xyz="0.045 -0.0535 0.00"
+	<origin xyz="0.0454 -0.0535 0.00"
 		rpy="${radians(90)} 0 ${radians(-180)}"/>
 	<geometry>
           <mesh filename="package://aist_barrett/meshes/visual/bhand_base.stl"
@@ -145,7 +162,7 @@
 	<xacro:gray_color/>
       </visual>
       <collision>
-	<origin xyz="0.045 -0.0535 0.0048"
+	<origin xyz="0.0454 -0.0535 0.0048"
 		rpy="${radians(90)} 0 ${radians(-180)}"/>
 	<geometry>
           <mesh filename="package://aist_barrett/meshes/collision/bhand_base.stl"
@@ -154,13 +171,21 @@
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
     </link>
+    <xacro:set_frame name="${prefix}palm_center_link"
+		     parent="${prefix}base_link">
+      <origin xyz="0.0 0.0 ${palm_height}" rpy="0 0 0"/>
+    </xacro:set_frame>
+    <xacro:set_frame name="${prefix}tip_link"
+		     parent="${prefix}base_link">
+      <origin xyz="0.0 0.0 ${tip_height}" rpy="0 ${radians(180)} 0"/>
+    </xacro:set_frame>
 
     <!-- Spread -->
     <joint name="${prefix}spread_joint" type="revolute">
       <origin xyz="${-half_tread} 0.0 ${base_height}"
 	      rpy="0.0 0 ${radians(-90)}"/>
-      <parent link="${prefix}base"/>
-      <child  link="${prefix}left_proximal"/>
+      <parent link="${prefix}base_link"/>
+      <child  link="${prefix}left_proximal_link"/>
       <axis  xyz="0 0 -1"/>
       <limit effort="30" velocity="1.5" lower="0.0" upper="${radians(180)}"/>
       <joint_properties damping="100.0" friction="1000.0"/>
@@ -171,8 +196,8 @@
     <joint name="${prefix}right_spread_joint" type="revolute">
       <origin xyz="${half_tread} 0.0 ${base_height}"
 	      rpy="0.0 0.0 ${radians(-90)}"/>
-      <parent link="${prefix}base"/>
-      <child  link="${prefix}right_proximal"/>
+      <parent link="${prefix}base_link"/>
+      <child  link="${prefix}right_proximal_link"/>
       <axis  xyz="0 0 -1"/>
       <limit effort="30" velocity="1.5" lower="${radians(180)}" upper="0.0"/>
       <mimic joint="${prefix}spread_joint" multiplier="-1" offset="0"/>
@@ -183,20 +208,22 @@
 
     <!-- Finger 1 -->
     <xacro:barrett_finger prefix="${prefix}" fingerprefix="left_"
-			  parent="${prefix}left_proximal">
-      <origin xyz="${medial_x} 0.0 ${medial_z}" rpy="${radians(90)} 0.0 0.0"/>
+			  parent="${prefix}left_proximal_link">
+      <origin xyz="${medial_x} ${medial_y} ${medial_z}"
+	      rpy="${radians(90)} 0.0 0.0"/>
     </xacro:barrett_finger>
 
     <!-- Finger 2 -->
     <xacro:barrett_finger prefix="${prefix}" fingerprefix="right_"
-			  parent="${prefix}right_proximal">
-      <origin xyz="${medial_x} 0.0 ${medial_z}" rpy="${radians(90)} 0.0 0.0"/>
+			  parent="${prefix}right_proximal_link">
+      <origin xyz="${medial_x} ${medial_y} ${medial_z}"
+	      rpy="${radians(90)} 0.0 0.0"/>
     </xacro:barrett_finger>
 
     <!-- Finger 3 -->
     <xacro:barrett_finger prefix="${prefix}" fingerprefix="middle_"
-			  parent="${prefix}base">
-      <origin xyz="0.0 ${medial_x} ${base_height + medial_z}"
+			  parent="${prefix}base_link">
+      <origin xyz="${medial_y} ${medial_x} ${base_height + medial_z}"
 	      rpy="${radians(90)} 0.0 ${radians(90)}"/>
     </xacro:barrett_finger>
 

@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:macro name="barrett_coupling" params="prefix parent *origin">
+  <xacro:macro name="barrett_coupling" params="prefix parent_link *origin">
 
-    <!-- coupling_length = 0.0169 - 2*0.0029 = 0.0111 -->
-    <xacro:property name="coupling_radius" value="0.0375"/>
-    <xacro:property name="coupling_length" value="0.0111"/>
+    <xacro:property name="coupling_radius" value="0.0445"/>
+    <xacro:property name="coupling_length" value="0.010"/>
 
     <link name="${prefix}base_link">
       <inertial>
@@ -14,7 +13,7 @@
 		 iyy="0.00017832" iyz="-3.4402E-08" izz="0.00013478"/>
       </inertial>
       <visual>
-        <origin xyz="${coupling_length/2} 0 0" rpy="0 ${radians(90)} 0"/>
+        <origin xyz="0 0 ${coupling_length/2}" rpy="0 0 0"/>
         <geometry>
           <cylinder length="${coupling_length}" radius="${coupling_radius}"/>
         </geometry>
@@ -24,7 +23,7 @@
 	</material>
       </visual>
       <collision>
-        <origin xyz="${coupling_length/2} 0 0" rpy="0 ${radians(90)} 0"/>
+        <origin xyz="0 0 ${coupling_length/2}" rpy="0 0 0"/>
         <geometry>
           <cylinder length="${coupling_length}" radius="${coupling_radius}"/>
         </geometry>
@@ -32,7 +31,7 @@
     </link>
 
     <joint name="${prefix}base_joint" type="fixed">
-      <parent link="${parent}"/>
+      <parent link="${parent_link}"/>
       <child  link="${prefix}base_link"/>
       <xacro:insert_block name="origin"/>
     </joint>
@@ -41,7 +40,7 @@
     <joint name="${prefix}flange_joint" type="fixed">
       <parent link="${prefix}base_link"/>
       <child  link="${prefix}flange_link"/>
-      <origin xyz="${coupling_length} 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 ${coupling_length}" rpy="0 0 0"/>
     </joint>
 
   </xacro:macro>
