@@ -45,6 +45,7 @@
 #include <ddynamic_reconfigure2/ddynamic_reconfigure2.hpp>
 #include <control_msgs/action/gripper_command.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 #include <aist_barrett_msgs/msg/finger_tip_torques.hpp>
@@ -85,6 +86,7 @@ class BarrettHandController : public rclcpp::Node
     using callback_group_p      = rclcpp::CallbackGroup::SharedPtr;
     using timer_p               = rclcpp::TimerBase::SharedPtr;
     using tactile_states_t      = aist_barrett_msgs::msg::TactileStateArray;
+    using float64_multi_array_t = std_msgs::msg::Float64MultiArray;
     using trigger_t             = std_srvs::srv::Trigger;
     using set_bool_t            = std_srvs::srv::SetBool;
     using finger_pos_t          = aist_barrett_msgs::srv::FingerPosition;
@@ -123,6 +125,8 @@ class BarrettHandController : public rclcpp::Node
   private:
     void        joint_state_cb()                                        ;
     void        tactile_state_cb()                                      ;
+
+    void        command_cb(msg_p<float64_multi_array_t> command)        ;
 
     void        finger_position_cb(req_cp<finger_pos_t> req,
                                    res_p<finger_pos_t>  res)            ;
@@ -163,6 +167,9 @@ class BarrettHandController : public rclcpp::Node
     const pub_p<tactile_states_t>       _tactile_state_pub;
     const callback_group_p              _tactile_state_cbg;
     const timer_p                       _tactile_state_timer;
+
+  // Command stuffs
+    const sub_p<float64_multi_array_t>  _command_sub;
 
   // Service stuffs
     const srv_p<finger_pos_t>           _finger_position_srv;
@@ -211,6 +218,11 @@ BarrettHandController::BarrettHandController(
                            std::bind(&BarrettHandController::tactile_state_cb,
                                      this),
                            _tactile_state_cbg) : nullptr),
+
+     _command_sub(create_subscription<float64_multi_array_t>(
+                      "~/command", 1,
+                      std::bind(&BarrettHandController::command_cb,
+                                this, std::placeholders::_1))),
 
      _finger_position_srv(create_service<finger_pos_t>(
                               "~/move_to_finger_positions",
@@ -402,6 +414,40 @@ BarrettHandController::tactile_state_cb()
     }
 
     _tactile_state_pub->publish(tactile_states);
+}
+
+void
+BarrettHandController::command_cb(msg_p<float64_multi_array_t> command)
+{
+    const auto& layout = command->layout;
+
+    if (layout.dim.size() == 1)
+    {
+        const auto&     dim = layout.dim[0];
+
+        if (dim.size == 4 && dim.stride == 1)
+        {
+            _hand->trapezoidalMove(barrett::Hand::jp_type(
+                                       command->data[layout.data_offset],
+                                       command->data[layout.data_offset + 1],
+                                       command->data[layout.data_offset + 2],
+                                       command->data[layout.data_offset + 3]),
+                                   barrett::Hand::WHOLE_HAND, false);
+        }
+        else
+        {
+            RCLCPP_ERROR(get_logger(),
+                         "Illegal input command layout[size=%d, stride=%d]",
+                         dim.size, dim.stride);
+
+        }
+    }
+    else
+    {
+        RCLCPP_ERROR(get_logger(),
+                     "The input command is not one-dimensional[dim=%ld]",
+                     layout.dim.size());
+    }
 }
 
 void
