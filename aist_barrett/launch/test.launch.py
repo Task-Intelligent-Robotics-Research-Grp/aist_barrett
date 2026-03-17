@@ -10,6 +10,28 @@ from launch_ros.parameter_descriptions import ParameterValue, ParameterFile
 from aist_bringup.launch_common        import declare_launch_arguments
 
 launch_arguments = [
+    {
+        'name':        'device_name',
+        'default':     'barrett_hand',
+        'description': 'device name'
+    },
+    {
+        'name':        'container',
+        'default':     'bhand_container',
+        'description': 'name of the component container'
+    },
+    {
+        'name':        'log_level',
+        'default':     'info',
+        'description': 'debug log level',
+        'choices':     ['debug', 'info', 'warn', 'error', 'fatal']
+    },
+    {
+        'name':        'output',
+        'default':     'both',
+        'description': 'pipe node output',
+        'choices':     ['screen', 'log', 'both']
+    }
 ]
 
 def launch_setup(context):

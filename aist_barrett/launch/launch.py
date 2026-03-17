@@ -38,7 +38,7 @@ def launch_setup(context):
             name=[LaunchConfiguration('device_name'), '_controller'],
             package='aist_barrett',
             plugin='aist_barrett::BarrettHandController',
-            parameters=[{'device_name', LaunchConfiguration('device_name')}],
+            parameters=[{'device_name': LaunchConfiguration('device_name')}],
             extra_arguments=[{'use_intra_process_comms': True}])
     ]
 
