@@ -39,16 +39,14 @@ rclcpp_components_register_nodes(
 ########################
 #  Python executables  #
 ########################
-# ament_python_install_package(${PROJECT_NAME})
+ament_python_install_package(${PROJECT_NAME})
 
-# install(
-#   PROGRAMS
-#     scripts/precision_tool_test.py
-#     scripts/screw_tool_test.py
-#     scripts/suction_tool_test.py
-#   DESTINATION
-#     lib/${PROJECT_NAME}
-# )
+install(
+  PROGRAMS
+    scripts/joint_state_to_array.py
+  DESTINATION
+    lib/${PROJECT_NAME}
+)
 
 ##############################
 #  environment hooks for gz  #
@@ -60,4 +58,4 @@ ament_environment_hooks(
   "${CMAKE_CURRENT_SOURCE_DIR}/hooks/${PROJECT_NAME}.sh.in"
 )
 
-ament_auto_package(INSTALL_TO_SHARE launch meshes urdf)
+ament_auto_package(INSTALL_TO_SHARE config launch meshes urdf)

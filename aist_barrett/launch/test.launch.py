@@ -6,13 +6,13 @@ from launch.substitutions              import (Command, FindExecutable,
                                                PathJoinSubstitution)
 from launch_ros.substitutions          import FindPackageShare
 from launch_ros.actions                import Node
-from launch_ros.parameter_descriptions import ParameterValue, ParameterFile
+from launch_ros.parameter_descriptions import ParameterValue
 from aist_bringup.launch_common        import declare_launch_arguments
 
 launch_arguments = [
     {
         'name':        'device_name',
-        'default':     'barrett_hand',
+        'default':     'bhand',
         'description': 'device name'
     },
     {
@@ -35,7 +35,6 @@ launch_arguments = [
 ]
 
 def launch_setup(context):
-    # Create robot description from URDF.
     robot_description = ParameterValue(
                             Command([FindExecutable(name='xacro'),
                                      ' ',
@@ -49,10 +48,13 @@ def launch_setup(context):
              parameters=[
                  {'robot_description': robot_description}
              ],
-             output='screen'),
+             output=LaunchConfiguration('output')),
         IncludeLaunchDescription(
             PathJoinSubstitution([FindPackageShare('aist_barrett'), 'launch',
                                   'launch.py'])),
+        IncludeLaunchDescription(
+            PathJoinSubstitution([FindPackageShare('aist_barrett'), 'launch',
+                                  'command_gui.launch.py'])),
         Node(name='rviz', package='rviz2', executable='rviz2',
              output='screen',
              arguments=[

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro"
        xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
-  <xacro:macro name="barrett_hand" params="name parent_link *origin">
+  <xacro:macro name="barrett_hand" params="prefix parent_link *origin">
 
     <xacro:macro name="gray_color">
       <material name="">
@@ -9,308 +9,226 @@
       </material>
     </xacro:macro>
 
+    <xacro:property name="base_height"	value="0.025"/>
+    <xacro:property name="palm_height"	value="0.061"/>
+    <xacro:property name="tip_height"	value="0.156"/>
+    <xacro:property name="half_tread"	value="0.025"/>
+    <xacro:property name="medial_x"	value="0.050"/>
+    <xacro:property name="medial_y"	value="-0.0001"/>
+    <xacro:property name="medial_z"	value="0.035"/>
+
+    <xacro:macro name="set_frame" params="name parent *origin">
+      <joint name="${name}_joint" type="fixed">
+	<parent link="${parent}"/>
+	<child  link="${name}"/>
+	<xacro:insert_block name="origin"/>
+      </joint>
+      <link name="${name}"/>
+    </xacro:macro>
+
+    <xacro:macro name="barrett_finger"
+		 params="prefix fingerprefix parent *origin">
+      <joint name="${prefix}${fingerprefix}finger_joint"
+	     type="revolute">
+	<xacro:insert_block name="origin"/>
+	<parent link="${parent}"/>
+	<child  link="${prefix}${fingerprefix}medial_link"/>
+	<axis xyz="0 0 1"/>
+	<limit effort="30" velocity="1.5" lower="0.0" upper="${radians(140)}"/>
+	<joint_properties damping="100.0" friction="1000.0"/>
+	<dynamics damping="1000"/>
+      </joint >
+      <link name="${prefix}${fingerprefix}medial_link">
+	<inertial>
+  	  <mass value="0.001"/>
+	  <origin xyz="0 0 0"/>
+	  <inertia ixx="1.0" ixy="0.0" ixz="0.0"
+		   iyy="1.0" iyz="0.0" izz="1.0"/>
+	</inertial>
+	<visual>
+	  <origin xyz="0.0418 0.1115 0.0456"
+		  rpy="0 ${radians(90)} ${radians(220)}"/>
+	  <geometry>
+            <mesh filename="package://aist_barrett/meshes/visual/bhand_link2.stl"
+		  scale="0.001 0.001 0.001"/>
+	  </geometry>
+	  <xacro:gray_color/>
+	</visual>
+	<collision>
+	  <origin xyz="0.0418 0.1115 0.0456"
+		  rpy="0 ${radians(90)} ${radians(220)}"/>
+	  <geometry>
+            <mesh filename="package://aist_barrett/meshes/collision/bhand_link2.stl"
+		  scale="0.001 0.001 0.001"/>
+	  </geometry>
+	  <contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
+	</collision>
+      </link>
+
+      <joint name="${prefix}${fingerprefix}distal_joint"
+	     type="revolute">
+	<origin xyz="0.070 0.0 0.0" rpy="0.0 0.0 0.0"/>
+	<parent link="${prefix}${fingerprefix}medial_link"/>
+	<child  link="${prefix}${fingerprefix}distal_link"/>
+	<axis xyz="0 0 1"/>
+	<mimic joint="${prefix}${fingerprefix}finger_joint"
+	       multiplier="${45.0/140.0}" offset="${radians(35)}"/>
+	<limit effort="30" velocity="1.5"
+	       lower="0.0" upper="${radians(80)}"/>
+	<joint_properties damping="100.0" friction="1000.0"/>
+	<dynamics damping="1000"/>
+      </joint >
+      <link name="${prefix}${fingerprefix}distal_link">
+	<inertial>
+  	  <mass value="0.001"/>
+	  <origin xyz="0 0 0"/>
+	  <inertia ixx="1.0" ixy="0.0" ixz="0.0"
+		   iyy="1.0" iyz="0.0" izz="1.0"/>
+	</inertial>
+	<visual>
+	  <origin xyz="0.108 0.039 0.046"
+		  rpy="${radians(225)} ${radians(90)} 0"/>
+	  <geometry>
+            <mesh filename="package://aist_barrett/meshes/visual/bhand_link3.stl"
+		  scale="0.001 0.001 0.001"/>
+	  </geometry>
+	  <xacro:gray_color/>
+	</visual>
+	<collision>
+	  <origin xyz="0.108 0.039 0.046"
+		  rpy="${radians(225)} ${radians(90)} 0"/>
+	  <geometry>
+            <mesh filename="package://aist_barrett/meshes/collision/bhand_link3.stl"
+		  scale="0.001 0.001 0.001"/>
+	  </geometry>
+	  <contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
+	</collision>
+      </link>
+
+      <xacro:set_frame name="${prefix}${fingerprefix}tip_link"
+		       parent="${prefix}${fingerprefix}distal_link">
+	<origin xyz="0.058 0 0" rpy="0 ${radians(-90)} 0"/>
+      </xacro:set_frame>
+    </xacro:macro>
+
+    <xacro:macro name="barrett_proximal" params="prefix fingerprefix">
+      <link name="${prefix}${fingerprefix}proximal_link">
+	<inertial>
+  	  <mass value="0.001"/>
+	  <origin xyz="0 0 0"/>
+	  <inertia ixx="1.0" ixy="0.0" ixz="0.0"
+		   iyy="1.0" iyz="0.0" izz="1.0"/>
+	</inertial>
+	<visual>
+	  <origin xyz="-0.0525 -0.0705 -0.025"
+		  rpy="${radians(90)} 0 ${radians(90)}"/>
+	  <geometry>
+            <mesh filename="package://aist_barrett/meshes/visual/bhand_link1.stl"
+		  scale="0.001 0.001 0.001"/>
+	  </geometry>
+	  <xacro:gray_color/>
+	</visual>
+	<collision>
+	  <origin xyz="-0.0525 -0.0705 -0.025"
+		  rpy="${radians(90)} 0 ${radians(90)}"/>
+	  <geometry>
+            <mesh filename="package://aist_barrett/meshes/collision/bhand_link1.stl"
+		  scale="0.001 0.001 0.001"/>
+	  </geometry>
+	  <contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
+	</collision>
+      </link>
+    </xacro:macro>
+
     <!-- Base -->
-    <joint name="${name}_base_joint" type="fixed">
+    <joint name="${prefix}base_joint" type="fixed">
       <parent link="${parent_link}"/>
-      <child link="${name}_base" />
+      <child  link="${prefix}base_link"/>
       <xacro:insert_block name="origin"/>
     </joint>
-    <link name="${name}_base">
+    <link name="${prefix}base_link">
       <inertial>
   	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
+	<origin xyz="0 0 0"/>
 	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual>
-	<origin rpy="1.57 0 -3.14" xyz="0.045 -0.0535 0.0148"/>
+	<origin xyz="0.0454 -0.0535 0.00"
+		rpy="${radians(90)} 0 ${radians(-180)}"/>
 	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_base.STL"
-		scale="0.001 0.001 0.001" />
+          <mesh filename="package://aist_barrett/meshes/visual/bhand_base.stl"
+		scale="0.001 0.001 0.001"/>
 	</geometry>
 	<xacro:gray_color/>
       </visual>
       <collision>
-	<origin rpy="1.57 0 -3.14" xyz="0.045 -0.0535 0.0148"/>
+	<origin xyz="0.0454 -0.0535 0.0048"
+		rpy="${radians(90)} 0 ${radians(-180)}"/>
 	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_base.STL"
-		scale="0.001 0.001 0.001" />
+          <mesh filename="package://aist_barrett/meshes/collision/bhand_base.stl"
+		scale="0.001 0.001 0.001"/>
 	</geometry>
 	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
       </collision>
     </link>
+    <xacro:set_frame name="${prefix}palm_center_link"
+		     parent="${prefix}base_link">
+      <origin xyz="0.0 0.0 ${palm_height}" rpy="0 0 0"/>
+    </xacro:set_frame>
+    <xacro:set_frame name="${prefix}tip_link"
+		     parent="${prefix}base_link">
+      <origin xyz="0.0 0.0 ${tip_height}" rpy="0 ${radians(180)} 0"/>
+    </xacro:set_frame>
 
-    <!-- Finger 1 -->
-    <joint name="${name}_j11_joint" type="revolute">
-      <origin xyz="-0.02475 0.0 0.0395" rpy="0.0 0 -1.57079633" />
-      <parent link="${name}_base"/>
-      <child link="${name}_link11" />
-      <axis xyz="0 0 -1"/>
-      <limit effort="30" velocity="1.5" lower="0.0" upper="3.14159265" />
-      <joint_properties damping="100.0" friction="1000.0" />
+    <!-- Spread -->
+    <joint name="${prefix}spread_joint" type="revolute">
+      <origin xyz="${-half_tread} 0.0 ${base_height}"
+	      rpy="0.0 0 ${radians(-90)}"/>
+      <parent link="${prefix}base_link"/>
+      <child  link="${prefix}left_proximal_link"/>
+      <axis  xyz="0 0 -1"/>
+      <limit effort="30" velocity="1.5" lower="0.0" upper="${radians(180)}"/>
+      <joint_properties damping="100.0" friction="1000.0"/>
       <dynamics damping="1000"/>
     </joint>
-    <link name="${name}_link11">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link1.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link1.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
+    <xacro:barrett_proximal prefix="${prefix}" fingerprefix="left_"/>
 
-    <joint name="${name}_j12_joint" type="revolute">
-      <origin xyz="0.050 0.0 0.038" rpy="1.57079633 0 0.0" />
-      <parent link="${name}_link11"/>
-      <child link="${name}_link12" />
-      <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5" lower="0.0" upper="2.44346095" />
-      <joint_properties damping="100.0" friction="1000.0" />
+    <joint name="${prefix}right_spread_joint" type="revolute">
+      <origin xyz="${half_tread} 0.0 ${base_height}"
+	      rpy="0.0 0.0 ${radians(-90)}"/>
+      <parent link="${prefix}base_link"/>
+      <child  link="${prefix}right_proximal_link"/>
+      <axis  xyz="0 0 -1"/>
+      <limit effort="30" velocity="1.5" lower="${radians(180)}" upper="0.0"/>
+      <mimic joint="${prefix}spread_joint" multiplier="-1" offset="0"/>
+      <joint_properties damping="100.0" friction="1000.0"/>
       <dynamics damping="1000"/>
     </joint >
-    <link name="${name}_link12">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link2.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link2.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
+    <xacro:barrett_proximal prefix="${prefix}" fingerprefix="right_"/>
 
-    <joint name="${name}_j13_joint" type="revolute">
-      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" />
-      <parent link="${name}_link12"/>
-      <child link="${name}_link13" />
-      <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5"
-	     lower="0.698131701" upper="2.44346095" />
-      <joint_properties damping="100.0" friction="1000.0" />
-      <dynamics damping="1000"/>
-    </joint >
-    <link name="${name}_link13">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link3.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link3.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
+    <!-- Finger 1 -->
+    <xacro:barrett_finger prefix="${prefix}" fingerprefix="left_"
+			  parent="${prefix}left_proximal_link">
+      <origin xyz="${medial_x} ${medial_y} ${medial_z}"
+	      rpy="${radians(90)} 0.0 0.0"/>
+    </xacro:barrett_finger>
 
     <!-- Finger 2 -->
-    <joint name="${name}_j21_joint" type="revolute">
-      <origin xyz="0.02475 0.0 0.0395" rpy="0.0 0.0 -1.57079633" />
-      <parent link="${name}_base"/>
-      <child link="${name}_link21" />
-      <axis xyz="0 0 -1"/>
-      <limit effort="30" velocity="1.5" lower="-3.14159265" upper="0.0" />
-      <joint_properties damping="100.0" friction="1000.0" />
-      <dynamics damping="1000"/>
-    </joint >
-    <link name="${name}_link21">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link1.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="1.57 0 1.57" xyz="-0.0525 -0.0705 -0.025"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link1.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
-
-    <joint name="${name}_j22_joint" type="revolute">
-      <origin xyz="0.050 0.0 0.038" rpy="1.57079633 0 0.0" />
-      <parent link="${name}_link21"/>
-      <child link="${name}_link22" />
-      <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5" lower="0.0" upper="2.44346095" />
-      <joint_properties damping="100.0" friction="1000.0" />
-      <dynamics damping="1000"/>
-    </joint >
-    <link name="${name}_link22">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link2.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link2.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
-
-    <joint name="${name}_j23_joint" type="revolute">
-      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" />
-      <parent link="${name}_link22"/>
-      <child link="${name}_link23" />
-      <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5"
-	     lower="0.698131701" upper="2.44346095" />
-      <joint_properties damping="100.0" friction="1000.0" />
-      <dynamics damping="1000"/>
-    </joint >
-    <link name="${name}_link23">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry name="link_bhand_f23_visual">
-          <mesh filename="package://aist_barrett/meshes/bhand_link3.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry name="link_bhand_f23_collision">
-          <mesh filename="package://aist_barrett/meshes/bhand_link3.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
+    <xacro:barrett_finger prefix="${prefix}" fingerprefix="right_"
+			  parent="${prefix}right_proximal_link">
+      <origin xyz="${medial_x} ${medial_y} ${medial_z}"
+	      rpy="${radians(90)} 0.0 0.0"/>
+    </xacro:barrett_finger>
 
     <!-- Finger 3 -->
-    <joint name="${name}_j32_joint" type="revolute">
-      <origin xyz="0.0 0.050 0.0775" rpy="1.57079633 0 1.57079633" />
-      <parent link="${name}_base"/>
-      <child link="${name}_link32" />
-      <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5" lower="0.0" upper="2.44346095" />
-      <joint_properties damping="100.0" friction="1000.0" />
-      <dynamics damping="1000"/>
-    </joint >
-    <link name="${name}_link32">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link2.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="0 1.57 3.83972" xyz="0.0418 0.1115 0.0456"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link2.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
-
-    <joint name="${name}_j33_joint" type="revolute">
-      <origin xyz="0.070 0.0 0.0" rpy="0.0 0 0.0" />
-      <parent link="${name}_link32"/>
-      <child link="${name}_link33" />
-      <axis xyz="0 0 1"/>
-      <limit effort="30" velocity="1.5"
-	     lower="0.698131701" upper="2.44346095" />
-      <joint_properties damping="100.0" friction="1000.0" />
-      <dynamics damping="1000"/>
-    </joint >
-    <link name="${name}_link33">
-      <inertial>
-  	<mass value="0.001"/>
-	<origin xyz="0 0 0" />
-	<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      </inertial>
-      <visual>
-	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry>
-          <mesh filename="package://aist_barrett/meshes/bhand_link3.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<xacro:gray_color/>
-      </visual>
-      <collision>
-	<origin rpy="3.92699 1.57 0" xyz="0.108 0.039 0.046"/>
-	<geometry name="link_bhand_f33_collision">
-          <mesh filename="package://aist_barrett/meshes/bhand_link3.STL"
-		scale="0.001 0.001 0.001" />
-	</geometry>
-	<contact_coefficients kd="1.0" kp="1000.0" mu="0"/>
-      </collision>
-    </link>
+    <xacro:barrett_finger prefix="${prefix}" fingerprefix="middle_"
+			  parent="${prefix}base_link">
+      <origin xyz="${medial_y} ${medial_x} ${base_height + medial_z}"
+	      rpy="${radians(90)} 0.0 ${radians(90)}"/>
+    </xacro:barrett_finger>
 
     <include filename="$(find aist_barrett
-		       )/urdf/palm_tactile_sensors.urdf.xacro" />
+		       )/urdf/palm_tactile_sensors.urdf.xacro"/>
     <palm_tactile_sensors/>
 
   </xacro:macro>

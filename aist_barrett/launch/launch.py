@@ -10,7 +10,7 @@ from aist_bringup.launch_common import declare_launch_arguments
 launch_arguments = [
     {
         'name':        'device_name',
-        'default':     'barrett_hand',
+        'default':     'bhand',
         'description': 'device name'
     },
     {

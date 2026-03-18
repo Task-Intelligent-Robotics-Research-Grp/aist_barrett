@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /TF1
         - /TF1/Frames1
-        - /RobotModel1/Status1
       Splitter Ratio: 0.5
     Tree Height: 620
   - Class: rviz_common/Selection
@@ -61,15 +60,62 @@ Visualization Manager:
           Value: true
         bhand_base:
           Value: true
-      Marker Scale: 0.30000001192092896
+        bhand_base_link:
+          Value: true
+        bhand_left_distal_link:
+          Value: true
+        bhand_left_medial_link:
+          Value: true
+        bhand_left_proximal_link:
+          Value: true
+        bhand_left_tip_link:
+          Value: true
+        bhand_middle_distal_link:
+          Value: true
+        bhand_middle_medial_link:
+          Value: true
+        bhand_middle_tip_link:
+          Value: true
+        bhand_palm_center_link:
+          Value: true
+        bhand_right_distal_link:
+          Value: true
+        bhand_right_medial_link:
+          Value: true
+        bhand_right_proximal_link:
+          Value: true
+        bhand_right_tip_link:
+          Value: true
+        bhand_tip_link:
+          Value: true
+      Marker Scale: 0.20000000298023224
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: true
+      Show Names: false
       Tree:
         base_link:
           bhand_base:
             {}
+          bhand_base_link:
+            bhand_left_proximal_link:
+              bhand_left_medial_link:
+                bhand_left_distal_link:
+                  bhand_left_tip_link:
+                    {}
+            bhand_middle_medial_link:
+              bhand_middle_distal_link:
+                bhand_middle_tip_link:
+                  {}
+            bhand_palm_center_link:
+              {}
+            bhand_right_proximal_link:
+              bhand_right_medial_link:
+                bhand_right_distal_link:
+                  bhand_right_tip_link:
+                    {}
+            bhand_tip_link:
+              {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -94,51 +140,71 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        bhand_base:
+        bhand_base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link11:
+        bhand_left_distal_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link12:
+        bhand_left_medial_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link13:
+        bhand_left_proximal_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link21:
+        bhand_left_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bhand_middle_distal_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link22:
+        bhand_middle_medial_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link23:
+        bhand_middle_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bhand_palm_center_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bhand_right_distal_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link32:
+        bhand_right_medial_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        bhand_link33:
+        bhand_right_proximal_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
+        bhand_right_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        bhand_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Mass Properties:
         Inertia: false
         Mass: false
@@ -193,7 +259,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.38363325595855713
+      Distance: 0.656761646270752
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -230,4 +296,4 @@ Window Geometry:
     collapsed: true
   Width: 1200
   X: 696
-  Y: 332
+  Y: 197

@@ -1,0 +1,16 @@
+/**:
+  $(var device_name)_controller:
+    ros__parameters:
+      device_name: $(var device_name)
+
+  joint_state_to_array:
+    ros__parameters:
+      joints:
+        - $(var device_name)_left_finger_joint
+        - $(var device_name)_right_finger_joint
+        - $(var device_name)_middle_finger_joint
+        - $(var device_name)_spread_joint
+
+  joint_state_publisher_gui:
+    ros__parameters:
+      rate: 50

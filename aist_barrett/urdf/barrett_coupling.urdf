@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<robot name="aaa" xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <link name ="base_link"/>
+
+  <xacro:include filename="$(find aist_barrett
+			   )/urdf/barrett_coupling.urdf.xacro"/>
+
+  <xacro:barrett_coupling prefix="bhand_coupling_" parent_link="base_link">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:barrett_coupling>
+
+</robot>
