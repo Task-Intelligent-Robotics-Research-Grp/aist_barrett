@@ -220,7 +220,7 @@ BarrettHandController::BarrettHandController(
                            _tactile_state_cbg) : nullptr),
 
      _command_sub(create_subscription<float64_multi_array_t>(
-                      "~/command", 1,
+                      "~/commands", 1,
                       std::bind(&BarrettHandController::command_cb,
                                 this, std::placeholders::_1))),
 
@@ -312,14 +312,6 @@ BarrettHandController::BarrettHandController(
     _joint_state.name[1] = device_name + "_right_finger_joint";
     _joint_state.name[2] = device_name + "_middle_finger_joint";
     _joint_state.name[3] = device_name + "_spread_joint";
-    // _joint_state.name[0] = device_name + "_j11_joint";
-    // _joint_state.name[1] = device_name + "_j21_joint";
-    // _joint_state.name[2] = device_name + "_j12_joint";
-    // _joint_state.name[3] = device_name + "_j22_joint";
-    // _joint_state.name[4] = device_name + "_j32_joint";
-    // _joint_state.name[5] = device_name + "_j13_joint";
-    // _joint_state.name[6] = device_name + "_j23_joint";
-    // _joint_state.name[7] = device_name + "_j33_joint";
     _joint_state.position.resize(_joint_state.name.size());
     _joint_state.velocity.resize(_joint_state.name.size());
     _joint_state.effort  .resize(_joint_state.name.size());
@@ -336,7 +328,7 @@ BarrettHandController::joint_state_cb()
     const auto& hi = _hand->getInnerLinkPosition();
     for (size_t i = 0; i < 3; ++i)
         _joint_state.position[i] = hi[i];
-    _joint_state.position[3] = -hi[3];
+    _joint_state.position[3] = hi[3];
 
     if (_hand->hasTactSensors())
     {
@@ -419,35 +411,18 @@ BarrettHandController::tactile_state_cb()
 void
 BarrettHandController::command_cb(msg_p<float64_multi_array_t> command)
 {
-    const auto& layout = command->layout;
-
-    if (layout.dim.size() == 1)
+    if (command->data.size() != 4)
     {
-        const auto&     dim = layout.dim[0];
-
-        if (dim.size == 4 && dim.stride == 1)
-        {
-            _hand->trapezoidalMove(barrett::Hand::jp_type(
-                                       command->data[layout.data_offset],
-                                       command->data[layout.data_offset + 1],
-                                       command->data[layout.data_offset + 2],
-                                       command->data[layout.data_offset + 3]),
-                                   barrett::Hand::WHOLE_HAND, false);
-        }
-        else
-        {
-            RCLCPP_ERROR(get_logger(),
-                         "Illegal input command layout[size=%d, stride=%d]",
-                         dim.size, dim.stride);
-
-        }
+        RCLCPP_ERROR(get_logger(), "Illegal input command data size[%ld]",
+                     command->data.size());
+        return;
     }
-    else
-    {
-        RCLCPP_ERROR(get_logger(),
-                     "The input command is not one-dimensional[dim=%ld]",
-                     layout.dim.size());
-    }
+
+    _hand->trapezoidalMove(barrett::Hand::jp_type(command->data[0],
+                                                  command->data[1],
+                                                  command->data[2],
+                                                  command->data[3]),
+                           barrett::Hand::WHOLE_HAND, true);
 }
 
 void
@@ -461,7 +436,7 @@ BarrettHandController::finger_position_cb(req_cp<finger_pos_t> req,
                                                   req->position[1],
                                                   req->position[2],
                                                   0.0),
-                           barrett::Hand::GRASP, false);
+                           barrett::Hand::GRASP, true);
     res->response = true;
 }
 
@@ -473,7 +448,7 @@ BarrettHandController::grasp_position_cb(req_cp<grasp_pos_t> req,
                 req->position);
 
     _hand->trapezoidalMove(barrett::Hand::jp_type(req->position),
-                           barrett::Hand::GRASP, false);
+                           barrett::Hand::GRASP, true);
     res->response = true;
 }
 
@@ -549,9 +524,9 @@ BarrettHandController::open_close_cb(req_cp<set_bool_t> req,
 
     const auto  axis = (spread ? barrett::Hand::SPREAD : barrett::Hand::GRASP);
     if (req->data)
-        _hand->close(axis, false);
+        _hand->close(axis, true);
     else
-        _hand->open(axis, false);
+        _hand->open(axis, true);
     res->success = true;
 }
 }       // namespace aist_barrett
