@@ -1,0 +1,360 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+  <xacro:macro name="wam_transmission" params="dof hand">
+    <if value="${dof == 4}">
+      <transmission name="trans_q1">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q1">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q1_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q2">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q2">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q2_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q3">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q3">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q3_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q4">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q4">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q4_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+    </if>
+    <if value="${dof == 7}">
+      <transmission name="trans_q1">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q1">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q1_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q2">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q2">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q2_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q3">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q3">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q3_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q4">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q4">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q4_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q5">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q5">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q5_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q6">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q6">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q6_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_q7">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="q7">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="q7_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+    </if>
+    <if value="${hand == 1}">
+      <transmission name="trans_bhand_j11_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j11_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j11_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j21_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j21_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j21_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j12_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j12_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j12_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j22_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j22_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j22_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j32_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j32_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j32_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j13_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j13_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j13_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j23_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j23_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j23_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+      <transmission name="trans_bhand_j33_joint">
+	<type>
+	  transmission_interface/SimpleTransmission
+	</type>
+	<joint name="bhand_j33_joint">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	</joint>
+	<actuator name="bhand_j33_joint_motor">
+	  <hardwareInterface>
+	    hardware_interface/PositionJointInterface
+	  </hardwareInterface>
+	  <mechanicalReduction>
+	    1
+	  </mechanicalReduction>
+	</actuator>
+      </transmission>
+    </if>
+    <gazebo>
+      <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+	<robotNamespace>
+	  /
+	</robotNamespace>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

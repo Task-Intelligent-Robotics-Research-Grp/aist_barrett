@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+
+  <property name="pi" value="${22/7}" />
+
+  <xacro:macro name="default_inertial" params="xyz rpy mass">
+    <inertial>
+      <origin xyz="${xyz}" rpy="${rpy}" />
+      <mass value="${mass}" />
+      <inertia ixx="0.1" ixy="0.1" ixz="0.1" iyy="0.1" iyz="0.1" izz="0.1" />
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="base_color">
+    <material name="">
+      <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+    </material>
+  </xacro:macro>
+
+  <xacro:macro name="first_link_color">
+    <material name="">
+      <color rgba="0.796078431372549 0.796078431372549 0.752941176470588 1" />
+    </material>
+  </xacro:macro>
+
+  <xacro:macro name="fourth_link_color">
+    <material name="">
+      <color rgba="0.666666666666667 0.63921568627451 0.556862745098039 1" />
+    </material>
+  </xacro:macro>
+
+  <xacro:macro name="gravity_off" params="dof hand">
+    <if value="${dof == 4}">
+      <gazebo reference="FirstLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="SecondLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="ThirdLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="FourthLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+    </if>
+    <if value="${dof == 7}">
+      <gazebo reference="FirstLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="SecondLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="ThirdLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="FourthLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="FifthLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="SixthLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="SeventhLink">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+    </if>
+    <if value="${hand == 1}">
+      <gazebo reference="bhand_base">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link11">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link21">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link12">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link22">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link32">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link13">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link23">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+      <gazebo reference="bhand_link33">
+	<turnGravityOff>
+	  true
+	</turnGravityOff>
+      </gazebo>
+    </if>
+  </xacro:macro>
+</robot>

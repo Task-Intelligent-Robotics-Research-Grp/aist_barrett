@@ -1,0 +1,4 @@
+#Velocity is in radians per second
+float64 velocity
+---
+bool response

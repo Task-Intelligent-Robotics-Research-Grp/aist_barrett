@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<robot name="aaa" xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:include filename="$(find wam_description)/urdf/wam_base.urdf.xacro"/>
+
+  <xacro:wam_base>
+  </xacro:wam_base>
+
+</robot>
