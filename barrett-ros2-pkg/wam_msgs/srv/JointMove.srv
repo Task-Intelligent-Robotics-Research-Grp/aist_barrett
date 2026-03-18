@@ -1,4 +1,0 @@
-#Joint State is in radians
-sensor_msgs/JointState joint_state
----
-bool response

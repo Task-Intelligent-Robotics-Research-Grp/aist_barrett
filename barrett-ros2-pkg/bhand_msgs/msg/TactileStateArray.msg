@@ -1,1 +1,0 @@
-bhand_msgs/TactileState[] tactile_states
