@@ -9,7 +9,7 @@ aist_barrett and aist_barrett_msgs
   ## インストール
  本ソフトウェアは，[ROS2 Jazzy](https://docs.ros.org/en/jazzy/index.html) distributionで動作確認しています．
  
- まず最初に，`Barrett Technology`社が提供する[libbarrett](https://git.barrett.com/software/libbarrett)をインストールします．詳細はライブラリ付属の[README](https://github.com/Task-Intelligent-Robotics-Research-Grp/libbarrett/blob/devel-aist/README.txt)を参照してください．
+ まず最初に，`Barrett Technology`社が提供する[libbarrett](https://git.barrett.com/software/libbarrett)の[修正版](https://github.com/Task-Intelligent-Robotics-Research-Grp/libbarrett)をインストールします．詳細はライブラリ付属の[README](https://github.com/Task-Intelligent-Robotics-Research-Grp/libbarrett/blob/devel-aist/README.md)を参照してください．
  
  次に，`github`から本ソフトウェアを入手し，ワークスペースに展開します．
  ```bash
@@ -28,5 +28,5 @@ aist_barrett and aist_barrett_msgs
  cd ~/ros2_ws
  colcon build
  ```
- 以上により，本ソフトウェアに含まれる[aist_barrett](./aist_barrett/)と[aist_barrett](./aist_barrett_msgs/)がインストールされます．使い方については，それぞれの`README`を参照してください．
+ 以上により，本ソフトウェアに含まれる[aist_barrett](./aist_barrett/)と[aist_barrett_msgs](./aist_barrett_msgs/)がインストールされます．使い方については，それぞれの`README`を参照してください．
  
