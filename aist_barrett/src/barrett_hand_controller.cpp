@@ -314,6 +314,8 @@ BarrettHandController::BarrettHandController(
     _joint_state.position.resize(_joint_state.name.size(), 0.0);
     _joint_state.velocity.resize(_joint_state.name.size(), 0.0);
     _joint_state.effort  .resize(_joint_state.name.size(), 0.0);
+    _joint_state.header.stamp.sec     = 0;
+    _joint_state.header.stamp.nanosec = 0;
 
     RCLCPP_INFO_STREAM(get_logger(), "controller started");
 }
@@ -321,13 +323,25 @@ BarrettHandController::BarrettHandController(
 void
 BarrettHandController::joint_state_cb()
 {
+  // Get current joint positions and time.
     _hand->update();
-    _joint_state.header.stamp = rclcpp::Node::now();
+    const auto& hi  = _hand->getInnerLinkPosition();
+    const auto  now = rclcpp::Node::now();
 
-    const auto& hi = _hand->getInnerLinkPosition();
+  // Set joint velocities.
+    if (const auto tp = rclcpp::Time(_joint_state.header.stamp).seconds())
+    {
+        const auto      dt = now.seconds() - tp;
+        for (size_t i = 0; i < 4; ++i)
+            _joint_state.velocity[i] = (hi[i] - _joint_state.position[i]) / dt;
+    }
+    _joint_state.header.stamp = now;    // Update timestamp.
+
+  // Set joint positions.
     for (size_t i = 0; i < 4; ++i)
         _joint_state.position[i] = hi[i];
 
+  // Set joint torques.
     if (_hand->hasFingertipTorqueSensors())
     {
         const auto&     torques = _hand->getFingertipTorque();
@@ -341,8 +355,8 @@ BarrettHandController::joint_state_cb()
 void
 BarrettHandController::tactile_state_cb()
 {
+  // Get current tactile sensor values and time.
     _hand->update();
-
     const auto&         tactile_pucks = _hand->getTactilePucks();
     tactile_states_t    tactile_states;
     tactile_states.header.stamp = rclcpp::Node::now();
@@ -354,10 +368,10 @@ BarrettHandController::tactile_state_cb()
         const auto&     pressures = tactile_pucks[i]->getTactileData();
         for (ssize_t j = 0; j < pressures.size(); ++j)
         {
-            int value = (int)(pressures[j]*256.0)/102;
+            auto        value = (int)(pressures[j]*256.0)/102;
             tactile_state.tactile_state[j] = pressures[j];
-            int c = 0;
-            int chunk;
+            int         c = 0;
+            int         chunk;
 
             for (int z = 4; z >= 0; --z)
             {
