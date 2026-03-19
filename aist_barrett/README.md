@@ -41,20 +41,14 @@ aist_barrett
 本ノードは[rclcppのコンポーネント](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Writing-a-Composable-Node.html)として実装されており，コンポーネントコンテナにロードして使用します．このとき，[launchファイル](./launch/launch.py#L60)にあるように，必ずマルチスレッド対応のコンテナ(`component_container_mt`)にロードしてください．複数のコールバックグループを使用し，マルチスレッドで実行することを前提にしていますので，シングルスレッドコンテナ(`component_container`)にロードするとデッドロックに陥ってハングします．
 
 ### 設定ファイルの準備
-次の2つの設定ファイルが必要です．
-- **ノードパラメータ設定ファイル**: 上述のノードパラメータを設定するYAMLファイル．サンプルは[ここ](./config/default.yaml)
-- **モータパラメータ設定ファイル**: モーターの設定YAMLファイル．ノードパラメータ設定ファイルの`dynamixel_info`フィールドから参照される．
-記述方法は[Dynamixelのマニュアル](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_workbench/#controllers)に従う．サンプルは[ここ](./config/joint_2_0.yaml)
+
 
 ### 起動方法
 次のコマンドを投入して起動します．
 ```bash
-ros2 launch dynamixel_workbench_controllers launch.py [name:=<node_name>] [param_file:=<param_file>] [container:=<container_name>] [external_container:=true]
+ros2 launch aist_barrett launch.py [device_name:=<hand_name>] [param_file:=<param_file>] [container:=<container_name>] [external_container:=true]
 ```
-- **name**: ノードに与える名前 (default: `basic_driver`)
+- **device_name**: ハンドに与える名前 (default: `bhand`)
 - **param_file**: ノードパラメータ設定ファイルへのパス (default: [default.yaml](./config/default.yaml))
 - **container**: ノードのロード先となるコンポーネントコンテナの名前 (default: `dynamixel_workbench_container`)
 - **external_container**: `true`ならば，`container`に指定した名前で別途起動していた既存のコンテナにロード．`false`ならば，`container`に指定した名前で新たにコンテナを起動し，それにロード (default: `false`)
-
-## dynamixel_workbench_controllersの使用例
-本ノードが提供するサービス `~/dynamixel_command` を利用して，Dynamixelモーターによって駆動される2指グリッパを制御するコントローラ [precision_tool_controller](https://github.com/Automation-Research-Team/artros/blob/ros2-devel/aist_fastening_tools/src/precision_tool_controller.cpp) がありますので．ご参照ください．
