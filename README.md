@@ -4,7 +4,7 @@ aist_barrett and aist_barrett_msgs
 ## 概要
 本ソフトウェアは，以下の２つのROS2パッケージを含みます．
  - **[aist_barrett](./aist_barrett/)**: [Barrett Technology社](https://barrett.com/)の[BarrettHand](https://barrett.com/barretthand)を制御するROS2ドライバ・コントローラ
- - **[aist_barrett](./aist_barrett_msgs/)**: `aist_barrett`で使用するROS2 message/service/actionの定義
+ - **[aist_barrett_msgs](./aist_barrett_msgs/)**: `aist_barrett`で使用するROS2 message/service/actionの定義
  
   ## インストール
  本ソフトウェアは，[ROS2 Jazzy](https://docs.ros.org/en/jazzy/index.html) distributionで動作確認しています．
