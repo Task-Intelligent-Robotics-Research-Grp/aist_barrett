@@ -48,7 +48,6 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/set_bool.hpp>
-#include <aist_barrett_msgs/msg/finger_tip_torques.hpp>
 #include <aist_barrett_msgs/msg/tactile_state_array.hpp>
 #include <aist_barrett_msgs/srv/finger_position.hpp>
 #include <aist_barrett_msgs/srv/finger_velocity.hpp>
@@ -312,9 +311,9 @@ BarrettHandController::BarrettHandController(
     _joint_state.name[1] = device_name + "_right_finger_joint";
     _joint_state.name[2] = device_name + "_middle_finger_joint";
     _joint_state.name[3] = device_name + "_spread_joint";
-    _joint_state.position.resize(_joint_state.name.size());
-    _joint_state.velocity.resize(_joint_state.name.size());
-    _joint_state.effort  .resize(_joint_state.name.size());
+    _joint_state.position.resize(_joint_state.name.size(), 0.0);
+    _joint_state.velocity.resize(_joint_state.name.size(), 0.0);
+    _joint_state.effort  .resize(_joint_state.name.size(), 0.0);
 
     RCLCPP_INFO_STREAM(get_logger(), "controller started");
 }
@@ -326,11 +325,10 @@ BarrettHandController::joint_state_cb()
     _joint_state.header.stamp = rclcpp::Node::now();
 
     const auto& hi = _hand->getInnerLinkPosition();
-    for (size_t i = 0; i < 3; ++i)
+    for (size_t i = 0; i < 4; ++i)
         _joint_state.position[i] = hi[i];
-    _joint_state.position[3] = hi[3];
 
-    if (_hand->hasTactSensors())
+    if (_hand->hasFingertipTorqueSensors())
     {
         const auto&     torques = _hand->getFingertipTorque();
         for (size_t i = 0; i < 4; ++i)
