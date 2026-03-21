@@ -1,0 +1,3 @@
+bool close   # true: close spread/fingers, false: open spread/fingers
+bool spread  # true: move spread joint, false: move finger joints
+---

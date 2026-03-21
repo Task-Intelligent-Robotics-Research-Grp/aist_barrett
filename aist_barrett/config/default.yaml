@@ -1,7 +1,11 @@
 /**:
   $(var device_name)_controller:
     ros__parameters:
-      device_name: $(var device_name)
+      device_name:         $(var device_name)
+      mimic_outer_joints:  true
+      # Coefficients for converting controller torque values to Newton-meters
+      # (Obtained from pyHand 1.0 Manual)
+      torque_coefficients: [-2.85, 37.46e-4, -1.708e-6, 2.754e-10]
 
   joint_state_to_array:
     ros__parameters:
