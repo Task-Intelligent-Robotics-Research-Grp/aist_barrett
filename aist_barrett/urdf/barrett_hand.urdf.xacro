@@ -15,7 +15,7 @@
     <xacro:property name="tip_height"	value="0.156"/>
     <xacro:property name="half_tread"	value="0.025"/>
     <xacro:property name="inner_x"	value="0.050"/>
-    <xacro:property name="inner_y"	value="-0.0001"/>
+    <xacro:property name="inner_y"	value="0.000"/>
     <xacro:property name="inner_z"	value="0.035"/>
 
     <xacro:macro name="set_frame" params="name parent *origin">
