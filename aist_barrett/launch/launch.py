@@ -1,17 +1,25 @@
-from launch                     import LaunchDescription
-from launch.actions             import OpaqueFunction
-from launch.substitutions       import (LaunchConfiguration,
-                                        PathJoinSubstitution)
-from launch_ros.actions         import Node, LoadComposableNodes
-from launch_ros.descriptions    import ComposableNode
-from launch_ros.substitutions   import FindPackageShare
-from aist_bringup.launch_common import declare_launch_arguments
+from launch                            import LaunchDescription
+from launch.actions                    import OpaqueFunction
+from launch.substitutions              import (LaunchConfiguration,
+                                               PathJoinSubstitution)
+from launch_ros.actions                import Node, LoadComposableNodes
+from launch_ros.descriptions           import ComposableNode
+from launch_ros.substitutions          import FindPackageShare
+from aist_bringup.launch_common        import declare_launch_arguments
+from launch_ros.parameter_descriptions import ParameterFile
 
 launch_arguments = [
     {
         'name':        'device_name',
         'default':     'bhand',
         'description': 'device name'
+    },
+    {
+        'name':        'param_file',
+        'default':     PathJoinSubstitution([
+                           FindPackageShare('aist_barrett'), 'config',
+                           'default.yaml']),
+        'description': 'abolute path to YAML file for configuring camera'
     },
     {
         'name':        'container',
@@ -38,7 +46,10 @@ def launch_setup(context):
             name=[LaunchConfiguration('device_name'), '_controller'],
             package='aist_barrett',
             plugin='aist_barrett::BarrettHandController',
-            parameters=[{'device_name': LaunchConfiguration('device_name')}],
+            parameters=[
+                ParameterFile(LaunchConfiguration('param_file'),
+                              allow_substs=True)
+            ],
             extra_arguments=[{'use_intra_process_comms': True}])
     ]
 

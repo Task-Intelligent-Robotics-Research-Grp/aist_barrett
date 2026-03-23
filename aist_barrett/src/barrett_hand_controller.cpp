@@ -48,7 +48,7 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/set_bool.hpp>
-#include <aist_barrett_msgs/msg/tactile_state_array.hpp>
+#include <aist_barrett_msgs/msg/tactile_states.hpp>
 #include <aist_barrett_msgs/srv/set_grasp_mode.hpp>
 #include <aist_barrett_msgs/srv/set_velocity.hpp>
 #include <aist_barrett_msgs/srv/open_or_close.hpp>
@@ -81,7 +81,7 @@ class BarrettHandController : public rclcpp::Node
     using cancel_response_t     = rclcpp_action::CancelResponse;
     using callback_group_p      = rclcpp::CallbackGroup::SharedPtr;
     using timer_p               = rclcpp::TimerBase::SharedPtr;
-    using tactile_states_t      = aist_barrett_msgs::msg::TactileStateArray;
+    using tactile_states_t      = aist_barrett_msgs::msg::TactileStates;
     using float64_multi_array_t = std_msgs::msg::Float64MultiArray;
     using trigger_t             = std_srvs::srv::Trigger;
     using set_bool_t            = std_srvs::srv::SetBool;
@@ -132,7 +132,7 @@ class BarrettHandController : public rclcpp::Node
     void        command_cb(msg_p<float64_multi_array_t> command)        ;
 
   // Timer stuffs
-    void        tactile_state_cb()                                      ;
+    void        tactile_states_cb()                                     ;
     void        joint_state_cb()                                        ;
 
   // Action stuffs
@@ -146,11 +146,10 @@ class BarrettHandController : public rclcpp::Node
 
     std::pair<double, double>
                 actual_gap_and_effort(const joint_state_t& js)  const   ;
-    bool	is_moving(const vector_t& vel)                  const   ;
-    bool	reached_goal(double gap, const vector_t& vel)   const   ;
-    bool	stalled(const vector_t& vel)                    const   ;
-    int		goal_pos(double position)			const	;
-    int		goal_cur(double max_effort)			const	;
+    bool        is_moving(const vector_t& vel)                  const   ;
+    bool        reached_goal(double gap, const vector_t& vel)   const   ;
+    bool        stalled(const vector_t& vel)                    const   ;
+    double      goal_pos(double position)			const	;
     double      newton_meters(double torque)                    const   ;
     double      outer_finger_pos(const vector_t& pos, size_t i) const   ;
 
@@ -162,11 +161,11 @@ class BarrettHandController : public rclcpp::Node
     const vector_t                      _torque_coefficients;
 
   // Gripper command action stuffs
-    const action_p<gripper_command_t>   _command_srv;
-    goal_handle_p<gripper_command_t>    _current_goal_handle;
-    std::mutex                          _current_goal_mtx;
-    rclcpp::Time                        _last_move_time;
-    const rclcpp::Duration              _stall_timeout;
+    // const action_p<gripper_command_t>   _gripper_command_srv;
+    // goal_handle_p<gripper_command_t>    _current_goal_handle;
+    // std::mutex                          _current_goal_mtx;
+    // rclcpp::Time                        _last_move_time;
+    // const rclcpp::Duration              _stall_timeout;
 
   // Joint state stuffs
     joint_state_t                       _joint_state;
@@ -175,9 +174,9 @@ class BarrettHandController : public rclcpp::Node
     const timer_p                       _joint_state_timer;
 
   // Tactile sensor stuffs
-    const pub_p<tactile_states_t>       _tactile_state_pub;
-    const callback_group_p              _tactile_state_cbg;
-    const timer_p                       _tactile_state_timer;
+    const pub_p<tactile_states_t>       _tactile_states_pub;
+    const callback_group_p              _tactile_states_cbg;
+    const timer_p                       _tactile_states_timer;
 
   // Command stuffs
     const sub_p<float64_multi_array_t>  _command_sub;
@@ -213,20 +212,20 @@ BarrettHandController::BarrettHandController(
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
 
-     _command_srv(rclcpp_action::create_server<gripper_command_t>(
-                      this, "~/gripper_cmd",
-                      std::bind(&BarrettHandController::goal_cb, this,
-                                std::placeholders::_1, std::placeholders::_2),
-                      std::bind(&BarrettHandController::cancel_cb,
-                                this, std::placeholders::_1),
-                      std::bind(&BarrettHandController::handle_accepted_cb,
-                                this, std::placeholders::_1))),
-     _current_goal_handle(nullptr),
-     _current_goal_mtx(),
-     _last_move_time(now()),
-     _stall_timeout(std::chrono::duration<double>(
-                        ddynamic_reconfigure2::declare_read_only_parameter(
-                            this, "stall_timeout", 1.0))),
+     // _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
+     //                  this, "~/gripper_cmd",
+     //                  std::bind(&BarrettHandController::goal_cb, this,
+     //                            std::placeholders::_1, std::placeholders::_2),
+     //                  std::bind(&BarrettHandController::cancel_cb,
+     //                            this, std::placeholders::_1),
+     //                  std::bind(&BarrettHandController::handle_accepted_cb,
+     //                            this, std::placeholders::_1))),
+     // _current_goal_handle(nullptr),
+     // _current_goal_mtx(),
+     // _last_move_time(now()),
+     // _stall_timeout(std::chrono::duration<double>(
+     //                    ddynamic_reconfigure2::declare_read_only_parameter(
+     //                        this, "stall_timeout", 1.0))),
 
      _joint_state(),
      _joint_state_pub(create_publisher<joint_state_t>("/joint_states", 1)),
@@ -238,19 +237,19 @@ BarrettHandController::BarrettHandController(
                                       this),
                             _joint_state_cbg)),
 
-     _tactile_state_pub(
+     _tactile_states_pub(
          _hand->hasTactSensors() ?
          create_publisher<tactile_states_t>("~/tactile_states", 1) : nullptr),
-     _tactile_state_cbg(
-         _tactile_state_pub ?
+     _tactile_states_cbg(
+         _tactile_states_pub ?
          create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive) :
          nullptr),
-     _tactile_state_timer(
-         _tactile_state_pub ?
+     _tactile_states_timer(
+         _tactile_states_pub ?
          create_wall_timer(20ms,
-                           std::bind(&BarrettHandController::tactile_state_cb,
+                           std::bind(&BarrettHandController::tactile_states_cb,
                                      this),
-                           _tactile_state_cbg) : nullptr),
+                           _tactile_states_cbg) : nullptr),
 
      _command_sub(create_subscription<float64_multi_array_t>(
                       "~/commands", 1,
@@ -294,8 +293,14 @@ BarrettHandController::BarrettHandController(
         RCLCPP_ERROR_STREAM(get_logger(), "hand not found!");
         throw;
     }
+    RCLCPP_INFO_STREAM(get_logger(), "hand found");
     _hand->initialize();
+    RCLCPP_INFO_STREAM(get_logger(), "hand initialized");
     _hand->update();
+    if (_torque_mode)
+        _hand->setTorqueMode(barrett::Hand::WHOLE_HAND);
+    else
+        _hand->setPositionMode(barrett::Hand::WHOLE_HAND);
 
     const auto
         device_name = ddynamic_reconfigure2::declare_read_only_parameter(
@@ -304,7 +309,7 @@ BarrettHandController::BarrettHandController(
         mimic_outer_joints
             = ddynamic_reconfigure2::declare_read_only_parameter(
                 this, "mimic_outer_joints", true);
-    _joint_state.name.resize(mimic_outer_joints ? 4 : 7);
+    _joint_state.name.resize(mimic_outer_joints ? 4 : 8);
     _joint_state.name[0] = device_name + "_left_finger_joint";
     _joint_state.name[1] = device_name + "_right_finger_joint";
     _joint_state.name[2] = device_name + "_middle_finger_joint";
@@ -394,34 +399,49 @@ BarrettHandController::command_cb(msg_p<float64_multi_array_t> command)
     }
 
     if (_torque_mode)
+    {
+        RCLCPP_INFO_STREAM(get_logger(), "### torque command: "
+                           << command->data[0] << ' ' << command->data[1] << ' '
+                           << command->data[2] << ' ' << command->data[3]);
         _hand->setTorqueCommand(barrett::Hand::jt_type(command->data[0],
                                                        command->data[1],
                                                        command->data[2],
-                                                       0.0),
-                                barrett::Hand::GRASP);
+                                                       command->data[3]),
+                                barrett::Hand::WHOLE_HAND);
+    }
     else
+    {
+        RCLCPP_INFO_STREAM(get_logger(), "### position command: "
+                           << command->data[0] << ' ' << command->data[1] << ' '
+                           << command->data[2] << ' ' << command->data[3]);
         _hand->setPositionCommand(barrett::Hand::jp_type(command->data[0],
                                                          command->data[1],
                                                          command->data[2],
                                                          command->data[3]),
                                   barrett::Hand::WHOLE_HAND);
+    }
 }
 
 // Timer stuffs
 void
-BarrettHandController::tactile_state_cb()
+BarrettHandController::tactile_states_cb()
 {
   // Get current tactile sensor values and time.
     _hand->update();
     const auto&         tactile_pucks = _hand->getTactilePucks();
     tactile_states_t    tactile_states;
     tactile_states.header.stamp = rclcpp::Node::now();
-    tactile_states.tactile_states.resize(tactile_pucks.size());
 
     for (size_t i = 0; i < tactile_pucks.size(); ++i)
     {
-        auto&           tactile_state = tactile_states.tactile_states[i];
-        const auto&     pressures = tactile_pucks[i]->getTactileData();
+        auto& tactile_state = (i == 0 ?
+                               tactile_states.left_finger_tactile_state :
+                               i == 1 ?
+                               tactile_states.right_finger_tactile_state :
+                               i == 2 ?
+                               tactile_states.middle_finger_tactile_state :
+                               tactile_states.palm_tactile_state);
+        const auto& pressures = tactile_pucks[i]->getTactileData();
         for (ssize_t j = 0; j < pressures.size(); ++j)
         {
             auto        value = (int)(pressures[j]*256.0)/102;
@@ -473,7 +493,7 @@ BarrettHandController::tactile_state_cb()
         }
     }
 
-    _tactile_state_pub->publish(tactile_states);
+    _tactile_states_pub->publish(tactile_states);
 }
 
 void
@@ -492,7 +512,8 @@ BarrettHandController::joint_state_cb()
         for (size_t i = 0; i < 4; ++i)
             _joint_state.velocity[i] = (hi[i] - _joint_state.position[i]) / dt;
         for (size_t i = 4; i < _joint_state.velocity.size(); ++i)
-            _joint_state.velocity[i] = (ho[i] - _joint_state.position[i]) / dt;
+            _joint_state.velocity[i] = (ho[i-4] - _joint_state.position[i])
+                                     / dt;
     }
     _joint_state.header.stamp = now;    // Update timestamp.
 
@@ -500,7 +521,7 @@ BarrettHandController::joint_state_cb()
     for (size_t i = 0; i < 4; ++i)
         _joint_state.position[i] = hi[i];
     for (size_t i = 4; i < _joint_state.position.size(); ++i)
-        _joint_state.position[i] = ho[i];
+        _joint_state.position[i] = ho[i-4];
 
   // Set joint torques.
     if (_hand->hasFingertipTorqueSensors())
@@ -514,61 +535,61 @@ BarrettHandController::joint_state_cb()
     _joint_state_pub->publish(_joint_state);
 
   // Check if the current goal is active.
-    if (!_current_goal_handle || !_current_goal_handle->is_active())
-	return;
+  //   if (!_current_goal_handle || !_current_goal_handle->is_active())
+  //       return;
 
-    const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
+  //   const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
 
-  // Check if the current goal is requested to be cancelled.
-    if (_current_goal_handle->is_canceling())
-    {
-	auto	result = std::make_unique<gripper_command_t::Result>();
-	result->stalled = false;
-	_current_goal_handle->canceled(std::move(result));
-	_current_goal_handle = nullptr;
+  // // Check if the current goal is requested to be cancelled.
+  //   if (_current_goal_handle->is_canceling())
+  //   {
+  //       auto	result = std::make_unique<gripper_command_t::Result>();
+  //       result->stalled = false;
+  //       _current_goal_handle->canceled(std::move(result));
+  //       _current_goal_handle = nullptr;
 
-	RCLCPP_WARN_STREAM(get_logger(), "goal CANCELED");
-	return;
-    }
+  //       RCLCPP_WARN_STREAM(get_logger(), "goal CANCELED");
+  //       return;
+  //   }
 
-    const auto  [gap, effort] = actual_gap_and_effort(_joint_state);
+  //   const auto  [gap, effort] = actual_gap_and_effort(_joint_state);
 
-    if (is_moving(_joint_state.velocity))
-	_last_move_time = now;
-    else if (reached_goal(gap, _joint_state.velocity))
-    {
-	auto	result = std::make_unique<gripper_command_t::Result>();
-	result->position     = gap;
-	result->effort	     = effort;
-	result->stalled	     = stalled(_joint_state.velocity);
-	result->reached_goal = true;
-	_current_goal_handle->succeed(std::move(result));
-	_current_goal_handle = nullptr;
+  //   if (is_moving(_joint_state.velocity))
+  //       _last_move_time = now;
+  //   else if (reached_goal(gap, _joint_state.velocity))
+  //   {
+  //       auto	result = std::make_unique<gripper_command_t::Result>();
+  //       result->position     = gap;
+  //       result->effort	     = effort;
+  //       result->stalled	     = stalled(_joint_state.velocity);
+  //       result->reached_goal = true;
+  //       _current_goal_handle->succeed(std::move(result));
+  //       _current_goal_handle = nullptr;
 
-	RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[reached goal]");
-	return;
-    }
-    else if (stalled(_joint_state.velocity))
-    {
-	auto	result = std::make_unique<gripper_command_t::Result>();
-	result->position     = gap;
-	result->effort	     = effort;
-	result->stalled	     = true;
-	result->reached_goal = false;
-	_current_goal_handle->succeed(std::move(result));
-	_current_goal_handle = nullptr;
+  //       RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[reached goal]");
+  //       return;
+  //   }
+  //   else if (stalled(_joint_state.velocity))
+  //   {
+  //       auto	result = std::make_unique<gripper_command_t::Result>();
+  //       result->position     = gap;
+  //       result->effort	     = effort;
+  //       result->stalled	     = true;
+  //       result->reached_goal = false;
+  //       _current_goal_handle->succeed(std::move(result));
+  //       _current_goal_handle = nullptr;
 
-	RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[stalled]");
-	return;
-    }
+  //       RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[stalled]");
+  //       return;
+  //   }
 
-  // Publish speed and filtered current as a feedback.
-    auto	feedback = std::make_unique<gripper_command_t::Feedback>();
-    feedback->position	   = gap;
-    feedback->effort	   = effort;
-    feedback->stalled	   = stalled(_joint_state.velocity);
-    feedback->reached_goal = reached_goal(gap, _joint_state.velocity);
-    _current_goal_handle->publish_feedback(std::move(feedback));
+  // // Publish speed and filtered current as a feedback.
+  //   auto	feedback = std::make_unique<gripper_command_t::Feedback>();
+  //   feedback->position	   = gap;
+  //   feedback->effort	   = effort;
+  //   feedback->stalled	   = stalled(_joint_state.velocity);
+  //   feedback->reached_goal = reached_goal(gap, _joint_state.velocity);
+  //   _current_goal_handle->publish_feedback(std::move(feedback));
 }
 
 // Action stuffs
@@ -589,44 +610,44 @@ BarrettHandController::cancel_cb(goal_handle_p<gripper_command_t>)
     return cancel_response_t::ACCEPT;
 }
 
-void
-BarrettHandController::handle_accepted_cb(
-    goal_handle_p<gripper_command_t> goal_handle)
-{
-    const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
+// void
+// BarrettHandController::handle_accepted_cb(
+//     goal_handle_p<gripper_command_t> goal_handle)
+// {
+//     const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
 
-  // If any active goal exists, abort it.
-    if (_current_goal_handle != nullptr && _current_goal_handle->is_active())
-    {
-        auto	result = std::make_unique<gripper_command_t::Result>();
-    //     result->position     = actual_position(_present_pos);
-        result->effort	     = 0.0;
-        result->stalled	     = false;
-        result->reached_goal = false;
-        _current_goal_handle->abort(std::move(result));
-        _current_goal_handle = nullptr;
+//   // If any active goal exists, abort it.
+//     if (_current_goal_handle != nullptr && _current_goal_handle->is_active())
+//     {
+//         auto	result = std::make_unique<gripper_command_t::Result>();
+//     //     result->position     = actual_position(_present_pos);
+//         result->effort	     = 0.0;
+//         result->stalled	     = false;
+//         result->reached_goal = false;
+//         _current_goal_handle->abort(std::move(result));
+//         _current_goal_handle = nullptr;
 
-        RCLCPP_WARN_STREAM(get_logger(), "previous goal ABORTED");
-    }
+//         RCLCPP_WARN_STREAM(get_logger(), "previous goal ABORTED");
+//     }
 
-    _last_move_time = now();
+//     _last_move_time = now();
 
-    // if (!send_move_command(goal_handle->get_goal()->command.position,
-    //     		   goal_handle->get_goal()->command.max_effort))
-    // {
-    //     auto	result = std::make_unique<gripper_command_t::Result>();
-    //     result->position     = actual_position(_present_pos);
-    //     result->effort	     = 0.0;
-    //     result->stalled	     = false;
-    //     result->reached_goal = false;
-    //     goal_handle->abort(std::move(result));
+//     // if (!send_move_command(goal_handle->get_goal()->command.position,
+//     //     		   goal_handle->get_goal()->command.max_effort))
+//     // {
+//     //     auto	result = std::make_unique<gripper_command_t::Result>();
+//     //     result->position     = actual_position(_present_pos);
+//     //     result->effort	     = 0.0;
+//     //     result->stalled	     = false;
+//     //     result->reached_goal = false;
+//     //     goal_handle->abort(std::move(result));
 
-    //     RCLCPP_ERROR_STREAM(get_logger(), "goal ABORTED");
-    //     return;
-    // }
+//     //     RCLCPP_ERROR_STREAM(get_logger(), "goal ABORTED");
+//     //     return;
+//     // }
 
-    _current_goal_handle = goal_handle;
-}
+//     _current_goal_handle = goal_handle;
+// }
 
 std::pair<double, double>
 BarrettHandController::actual_gap_and_effort(const joint_state_t& js) const
@@ -645,22 +666,22 @@ BarrettHandController::is_moving(const vector_t& vel) const
             std::abs(vel[2]) < _vel_thresh && std::abs(vel[3]) < _vel_thresh);
 }
 
-bool
-BarrettHandController::reached_goal(double gap, const vector_t& vel) const
-{
-    // RCLCPP_DEBUG_STREAM(get_logger(), "*** gap=" << gap << ", goal_pos="
-    //     		<< _current_goal_handle->get_goal()->command.position
-    //     		<< ", vel=" << vel);
-    return !is_moving(vel) &&
-	   std::abs(gap - goal_pos(_current_goal_handle
-				   ->get_goal()->command.position)) <= 0.001;
-}
+// bool
+// BarrettHandController::reached_goal(double gap, const vector_t& vel) const
+// {
+//     // RCLCPP_DEBUG_STREAM(get_logger(), "*** gap=" << gap << ", goal_pos="
+//     //     		<< _current_goal_handle->get_goal()->command.position
+//     //     		<< ", vel=" << vel);
+//     return !is_moving(vel) &&
+// 	   std::abs(gap - goal_pos(_current_goal_handle
+// 				   ->get_goal()->command.position)) <= 0.001;
+// }
 
-bool
-BarrettHandController::stalled(const vector_t& vel) const
-{
-    return !is_moving(vel) && now() - _last_move_time > _stall_timeout;
-}
+// bool
+// BarrettHandController::stalled(const vector_t& vel) const
+// {
+//     return !is_moving(vel) && now() - _last_move_time > _stall_timeout;
+// }
 
 double
 BarrettHandController::goal_pos(double position) const
