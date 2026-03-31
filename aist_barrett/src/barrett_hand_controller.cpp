@@ -232,7 +232,7 @@ BarrettHandController::BarrettHandController(
      _joint_state_cbg(create_callback_group(
                           rclcpp::CallbackGroupType::MutuallyExclusive)),
      _joint_state_timer(create_wall_timer(
-                            2ms,
+                            5ms,
                             std::bind(&BarrettHandController::joint_state_cb,
                                       this),
                             _joint_state_cbg)),
@@ -296,6 +296,8 @@ BarrettHandController::BarrettHandController(
     RCLCPP_INFO_STREAM(get_logger(), "hand found");
     _hand->initialize();
     RCLCPP_INFO_STREAM(get_logger(), "hand initialized");
+    // _hand->open(barrett::Hand::GRASP, true);
+    // _hand->open(barrett::Hand::SPREAD, true);
     _hand->update();
     if (_torque_mode)
         _hand->setTorqueMode(barrett::Hand::WHOLE_HAND);
@@ -399,27 +401,17 @@ BarrettHandController::command_cb(msg_p<float64_multi_array_t> command)
     }
 
     if (_torque_mode)
-    {
-        RCLCPP_INFO_STREAM(get_logger(), "### torque command: "
-                           << command->data[0] << ' ' << command->data[1] << ' '
-                           << command->data[2] << ' ' << command->data[3]);
         _hand->setTorqueCommand(barrett::Hand::jt_type(command->data[0],
                                                        command->data[1],
                                                        command->data[2],
                                                        command->data[3]),
                                 barrett::Hand::WHOLE_HAND);
-    }
     else
-    {
-        RCLCPP_INFO_STREAM(get_logger(), "### position command: "
-                           << command->data[0] << ' ' << command->data[1] << ' '
-                           << command->data[2] << ' ' << command->data[3]);
         _hand->setPositionCommand(barrett::Hand::jp_type(command->data[0],
                                                          command->data[1],
                                                          command->data[2],
                                                          command->data[3]),
                                   barrett::Hand::WHOLE_HAND);
-    }
 }
 
 // Timer stuffs

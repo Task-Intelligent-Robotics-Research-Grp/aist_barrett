@@ -17,4 +17,4 @@
 
   joint_state_publisher_gui:
     ros__parameters:
-      rate: 50
+      rate: 100
