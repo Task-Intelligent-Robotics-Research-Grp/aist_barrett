@@ -1,0 +1,20 @@
+uint8 PINCH   = 0  # grasp with three fingers (0 <= spread <= 90 deg.)
+uint8 SCISSOR = 1  # grasp with left and right fingers (spread = 90 deg.)
+uint8 GRIP    = 2  # grasp with three fingers and palm (spread = 180 deg.)
+
+uint8   mode       # PINCH/SCISSOR/GRIP
+float64 diameter
+float64 spread
+float64 max_effort
+---
+float64 position  # The current gripper gap size (in meters)
+float64 spread    # The current gripper spread angle (in radians)
+float64 effort    # The current effort exerted (in Newtons)
+bool stalled      # True iff the gripper is exerting max effort and not moving
+bool reached_goal # True iff the gripper position has reached the commanded setpoint
+---
+float64 position  # The current gripper gap size (in meters)
+float64 spread    # The current gripper spread angle (in radians)
+float64 effort    # The current effort exerted (in Newtons)
+bool stalled      # True iff the gripper is exerting max effort and not moving
+bool reached_goal # True iff the gripper position has reached the commanded setpoint

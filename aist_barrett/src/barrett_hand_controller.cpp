@@ -43,7 +43,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <ddynamic_reconfigure2/ddynamic_reconfigure2.hpp>
-#include <control_msgs/action/gripper_command.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -52,11 +51,14 @@
 #include <aist_barrett_msgs/srv/set_grasp_mode.hpp>
 #include <aist_barrett_msgs/srv/set_velocity.hpp>
 #include <aist_barrett_msgs/srv/open_or_close.hpp>
+#include <aist_barrett_msgs/action/gripper_command.hpp>
 
 using namespace std::chrono_literals;
 
 namespace aist_barrett
 {
+template <class T> inline T     square(T x)     { return x*x; }
+
 /************************************************************************
 *  static functions                                                     *
 ************************************************************************/
@@ -75,7 +77,6 @@ class BarrettHandController : public rclcpp::Node
 {
   private:
     using joint_state_t         = sensor_msgs::msg::JointState;
-    using gripper_command_t     = control_msgs::action::GripperCommand;
     using goal_uuid_t           = rclcpp_action::GoalUUID;
     using goal_response_t       = rclcpp_action::GoalResponse;
     using cancel_response_t     = rclcpp_action::CancelResponse;
@@ -88,6 +89,7 @@ class BarrettHandController : public rclcpp::Node
     using set_grasp_mode_t      = aist_barrett_msgs::srv::SetGraspMode;
     using set_velocity_t        = aist_barrett_msgs::srv::SetVelocity;
     using open_or_close_t       = aist_barrett_msgs::srv::OpenOrClose;
+    using gripper_command_t     = aist_barrett_msgs::action::GripperCommand;
     using vector_t              = std::vector<double>;
 
     template <class MSG>
@@ -112,6 +114,8 @@ class BarrettHandController : public rclcpp::Node
     using res_p         = typename SRV::Response::SharedPtr;
     template <class SRV>
     using clnt_p        = typename rclcpp::Client<SRV>::SharedPtr;
+
+    enum GraspMode      { PINCH, SCISSOR, GRIP };
 
   public:
     BarrettHandController(const rclcpp::NodeOptions& options)           ;
@@ -153,6 +157,12 @@ class BarrettHandController : public rclcpp::Node
     double      newton_meters(double torque)                    const   ;
     double      outer_finger_pos(const vector_t& pos, size_t i) const   ;
 
+    std::pair<double, double>
+                solve_for_finger_positions(GraspMode grasp_mode,
+                                           double diameter,
+                                           double spread_pos)   const   ;
+    double      solve_for_finger_position(double r)             const   ;
+
   private:
   // libbarrett
     barrett::ProductManager             _pm;
@@ -182,6 +192,7 @@ class BarrettHandController : public rclcpp::Node
     const sub_p<float64_multi_array_t>  _command_sub;
 
   // Service stuffs
+    GraspMode                           _grasp_mode;
     const srv_p<set_bool_t>             _set_torque_mode_srv;
     const srv_p<set_grasp_mode_t>       _set_grasp_mode_srv;
     const srv_p<set_velocity_t>         _set_velocity_srv;
@@ -189,15 +200,15 @@ class BarrettHandController : public rclcpp::Node
     const srv_p<trigger_t>              _idle_srv;
 
   // Geometric dimensions required for computiong IK
-    static constexpr double             _half_tread              = 0.025;
-    static constexpr double             _inner_x                 = 0.050;
-    static constexpr double             _inner_finger_length     = 0.070;
-    static constexpr double             _outer_finger_length     = 0.058;
-    static constexpr double             _outer_finger_pos_mul    = 45.0/180.0;
-    static constexpr double             _outer_finger_pos_offset = 0.6109;
+    static constexpr double     _half_tread              = 0.025;
+    static constexpr double     _inner_x                 = 0.050;
+    static constexpr double     _inner_finger_length     = 0.070;
+    static constexpr double     _outer_finger_length     = 0.058;
+    static constexpr double     _outer_finger_pos_mul    = 45.0/180.0;
+    static constexpr double     _outer_finger_pos_offset = 0.6109;  // 35 deg
 
   // Thresholds
-    static constexpr double             _vel_thresh = 0.0873;  // 5 deg/sec
+    static constexpr double     _vel_thresh = 0.0873;  // 5 deg/sec
 };
 
 BarrettHandController::BarrettHandController(
@@ -207,7 +218,7 @@ BarrettHandController::BarrettHandController(
      _hand(_pm.foundHand() ? _pm.getHand() : nullptr),
      _torque_mode(false),
      _torque_coefficients(ddynamic_reconfigure2::declare_read_only_parameter(
-                              this, "toque_coefficients",
+                              this, "torque_coefficients",
                             // default values obtained from pyHand 1.0 Manual
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
@@ -256,6 +267,7 @@ BarrettHandController::BarrettHandController(
                       std::bind(&BarrettHandController::command_cb,
                                 this, std::placeholders::_1))),
 
+     _grasp_mode(PINCH),
      _set_torque_mode_srv(create_service<set_bool_t>(
                               "~/set_torque_mode",
                               std::bind(
@@ -346,9 +358,32 @@ BarrettHandController::set_torque_mode_cb(req_cp<set_bool_t> req,
 
 void
 BarrettHandController::set_grasp_mode_cb(req_cp<set_grasp_mode_t> req,
-                                         res_p<set_grasp_mode_t>)
+                                         res_p<set_grasp_mode_t>  res)
 {
-    RCLCPP_INFO_STREAM(get_logger(), "grasp mode set to");
+    res->success = true;
+
+    switch (req->mode)
+    {
+      case set_grasp_mode_t::Request::PINCH:
+        _grasp_mode = PINCH;
+        break;
+      case set_grasp_mode_t::Request::SCISSOR:
+        _grasp_mode = SCISSOR;
+        break;
+      case set_grasp_mode_t::Request::GRIP:
+        _grasp_mode = GRIP;
+        break;
+      default:
+        res->success = false;
+        break;
+    }
+
+    if (res->success)
+        RCLCPP_INFO_STREAM(get_logger(), "grasp mode set to"
+                           << (_grasp_mode == PINCH   ? "PINCH" :
+                               _grasp_mode == SCISSOR ? "SCISSOR" : "GRIP"));
+    else
+        RCLCPP_ERROR_STREAM(get_logger(), "unknown grasp mode");
 }
 
 void
@@ -598,8 +633,9 @@ BarrettHandController::goal_cb(const goal_uuid_t&,
                                goal_cp<gripper_command_t> goal)
 {
     RCLCPP_INFO_STREAM(get_logger(),
-		       "goal ACCEPTED: position=" << goal->command.position
-		       << ", max_effort=" << goal->command.max_effort);
+		       "goal ACCEPTED: position=" << goal->position
+                       << ", spread=" << goal->spread*180.0/M_PI
+		       << " deg., max_effort=" << goal->max_effort);
     return goal_response_t::ACCEPT_AND_EXECUTE;
 }
 
@@ -691,10 +727,13 @@ BarrettHandController::goal_pos(double position) const
 double
 BarrettHandController::newton_meters(double torque) const
 {
-    return _torque_coefficients[0]
-         + _torque_coefficients[1] * torque
-         + _torque_coefficients[2] * torque * torque
-         + _torque_coefficients[3] * torque * torque * torque;
+    double      nm = 0.0, x = 1.0;
+    for (const auto coefficient : _torque_coefficients)
+    {
+        nm += coefficient * x;
+        x  *= torque;
+    }
+    return nm;
 }
 
 double
@@ -704,6 +743,44 @@ BarrettHandController::outer_finger_pos(const vector_t& pos, size_t i) const
         return _outer_finger_pos_mul * pos[i] + _outer_finger_pos_offset;
     else
         return pos[4 + i];
+}
+
+std::pair<double, double>
+BarrettHandController::solve_for_finger_positions(GraspMode grasp_mode,
+                                                  double diameter,
+                                                  double spread_pos) const
+{
+    if (grasp_mode == SCISSOR)
+        spread_pos = M_PI/2;    // 90 deg.
+
+    const auto  r = (0.25*square(diameter) - square(_half_tread))
+                  / (_half_tread*std::sin(spread_pos) +
+                     std::sqrt(0.25*square(diameter) -
+                               square(_half_tread*std::cos(spread_pos))));
+    return {solve_for_finger_position(r - _inner_x),
+            solve_for_finger_position(0.5*diameter - _inner_x)};
+}
+
+double
+BarrettHandController::solve_for_finger_position(double r) const
+{
+    double      pos = 0.5*M_PI;   // Set initial position to 90 deg.
+    for (size_t i = 10; i--; )
+    {
+        const auto outer_finger_pos = _outer_finger_pos_mul * pos
+                                    + _outer_finger_pos_offset;
+        const auto y = _inner_finger_length * std::cos(pos)
+                     + _outer_finger_length * std::cos(outer_finger_pos);
+        if (std::abs(y - r) < 0.0001)
+            break;
+
+        const auto s = _inner_finger_length * std::sin(pos)
+                     + _outer_finger_length * std::sin(outer_finger_pos)
+                     * _outer_finger_pos_mul;
+        pos += y/s;
+    }
+
+    return pos;
 }
 }       // namespace aist_barrett
 
