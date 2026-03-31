@@ -1,7 +1,8 @@
-uint8 BASIC = 0	 # grasp with three fingers (0 <= spread <= 90.deg)
-uint8 PINCH = 1  # grasp with left and right fingers (spread = 90 deg.)
-uint8 WIDE  = 2	 # grasp with three fingers and palm (spread = 180 deg.)
+uint8 PINCH   = 0  # grasp with three fingers (0 <= spread <= 90.deg)
+uint8 SCISSOR = 1  # grasp with left and right fingers (spread = 90 deg.)
+uint8 GRIP    = 2  # grasp with three fingers and palm (spread = 180 deg.)
 
-uint8   mode     # BASIC/PINCH/WIDE
-float64 spread   # spread angle(rad)
+uint8   mode       # PINCH/SCISSOR/GRIP
+float64 spread     # spread angle(rad)
 ---
+bool    success
