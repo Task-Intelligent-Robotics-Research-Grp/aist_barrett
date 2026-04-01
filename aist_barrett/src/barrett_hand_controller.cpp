@@ -625,7 +625,7 @@ BarrettHandController::goal_cb(const goal_uuid_t&,
                                goal_cp<gripper_command_t> goal)
 {
     RCLCPP_INFO_STREAM(get_logger(),
-		       "goal ACCEPTED: position=" << goal->position
+		       "goal ACCEPTED: diameter=" << goal->diameter
                        << ", spread=" << goal->spread*180.0/M_PI
 		       << " deg., max_effort=" << goal->max_effort);
     return goal_response_t::ACCEPT_AND_EXECUTE;
