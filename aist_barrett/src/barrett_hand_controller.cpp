@@ -48,7 +48,6 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 #include <aist_barrett_msgs/msg/tactile_states.hpp>
-#include <aist_barrett_msgs/srv/set_grasp_mode.hpp>
 #include <aist_barrett_msgs/srv/set_velocity.hpp>
 #include <aist_barrett_msgs/srv/open_or_close.hpp>
 #include <aist_barrett_msgs/action/gripper_command.hpp>
@@ -86,11 +85,11 @@ class BarrettHandController : public rclcpp::Node
     using float64_multi_array_t = std_msgs::msg::Float64MultiArray;
     using trigger_t             = std_srvs::srv::Trigger;
     using set_bool_t            = std_srvs::srv::SetBool;
-    using set_grasp_mode_t      = aist_barrett_msgs::srv::SetGraspMode;
     using set_velocity_t        = aist_barrett_msgs::srv::SetVelocity;
     using open_or_close_t       = aist_barrett_msgs::srv::OpenOrClose;
     using gripper_command_t     = aist_barrett_msgs::action::GripperCommand;
     using vector_t              = std::vector<double>;
+    using vector3_t             = std::array<double, 3>;
 
     template <class MSG>
     using msg_p         = typename MSG::UniquePtr;
@@ -115,8 +114,6 @@ class BarrettHandController : public rclcpp::Node
     template <class SRV>
     using clnt_p        = typename rclcpp::Client<SRV>::SharedPtr;
 
-    enum GraspMode      { PINCH, SCISSOR, GRIP };
-
   public:
     BarrettHandController(const rclcpp::NodeOptions& options)           ;
 
@@ -124,8 +121,6 @@ class BarrettHandController : public rclcpp::Node
   // Service stuffs
     void        set_torque_mode_cb(req_cp<set_bool_t> req,
                                    res_p<set_bool_t>  res)              ;
-    void        set_grasp_mode_cb(req_cp<set_grasp_mode_t> req,
-                                  res_p<set_grasp_mode_t>)              ;
     void        set_velocity_cb(req_cp<set_velocity_t> req,
                                 res_p<set_velocity_t>)                  ;
     void        open_or_close_cb(req_cp<open_or_close_t> req,
@@ -157,11 +152,11 @@ class BarrettHandController : public rclcpp::Node
     double      newton_meters(double torque)                    const   ;
     double      outer_finger_pos(const vector_t& pos, size_t i) const   ;
 
-    std::pair<double, double>
-                solve_for_finger_positions(GraspMode grasp_mode,
-                                           double diameter,
-                                           double spread_pos)   const   ;
-    double      solve_for_finger_position(double r)             const   ;
+
+    vector3_t   finger_positions_from_gap(double gap,
+                                          double spread_pos)    const   ;
+    double      pos_from_height(double h)                       const   ;
+    double      pos_from_radius(double r)                       const   ;
 
   private:
   // libbarrett
@@ -171,11 +166,11 @@ class BarrettHandController : public rclcpp::Node
     const vector_t                      _torque_coefficients;
 
   // Gripper command action stuffs
-    // const action_p<gripper_command_t>   _gripper_command_srv;
-    // goal_handle_p<gripper_command_t>    _current_goal_handle;
-    // std::mutex                          _current_goal_mtx;
-    // rclcpp::Time                        _last_move_time;
-    // const rclcpp::Duration              _stall_timeout;
+    const action_p<gripper_command_t>   _gripper_command_srv;
+    goal_handle_p<gripper_command_t>    _current_goal_handle;
+    std::mutex                          _current_goal_mtx;
+    rclcpp::Time                        _last_move_time;
+    const rclcpp::Duration              _stall_timeout;
 
   // Joint state stuffs
     joint_state_t                       _joint_state;
@@ -192,9 +187,7 @@ class BarrettHandController : public rclcpp::Node
     const sub_p<float64_multi_array_t>  _command_sub;
 
   // Service stuffs
-    GraspMode                           _grasp_mode;
     const srv_p<set_bool_t>             _set_torque_mode_srv;
-    const srv_p<set_grasp_mode_t>       _set_grasp_mode_srv;
     const srv_p<set_velocity_t>         _set_velocity_srv;
     const srv_p<open_or_close_t>        _open_or_close_srv;
     const srv_p<trigger_t>              _idle_srv;
@@ -223,20 +216,20 @@ BarrettHandController::BarrettHandController(
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
 
-     // _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
-     //                  this, "~/gripper_cmd",
-     //                  std::bind(&BarrettHandController::goal_cb, this,
-     //                            std::placeholders::_1, std::placeholders::_2),
-     //                  std::bind(&BarrettHandController::cancel_cb,
-     //                            this, std::placeholders::_1),
-     //                  std::bind(&BarrettHandController::handle_accepted_cb,
-     //                            this, std::placeholders::_1))),
-     // _current_goal_handle(nullptr),
-     // _current_goal_mtx(),
-     // _last_move_time(now()),
-     // _stall_timeout(std::chrono::duration<double>(
-     //                    ddynamic_reconfigure2::declare_read_only_parameter(
-     //                        this, "stall_timeout", 1.0))),
+     _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
+                      this, "~/gripper_cmd",
+                      std::bind(&BarrettHandController::goal_cb, this,
+                                std::placeholders::_1, std::placeholders::_2),
+                      std::bind(&BarrettHandController::cancel_cb,
+                                this, std::placeholders::_1),
+                      std::bind(&BarrettHandController::handle_accepted_cb,
+                                this, std::placeholders::_1))),
+     _current_goal_handle(nullptr),
+     _current_goal_mtx(),
+     _last_move_time(now()),
+     _stall_timeout(std::chrono::duration<double>(
+                        ddynamic_reconfigure2::declare_read_only_parameter(
+                            this, "stall_timeout", 1.0))),
 
      _joint_state(),
      _joint_state_pub(create_publisher<joint_state_t>("/joint_states", 1)),
@@ -267,7 +260,6 @@ BarrettHandController::BarrettHandController(
                       std::bind(&BarrettHandController::command_cb,
                                 this, std::placeholders::_1))),
 
-     _grasp_mode(PINCH),
      _set_torque_mode_srv(create_service<set_bool_t>(
                               "~/set_torque_mode",
                               std::bind(
@@ -275,13 +267,6 @@ BarrettHandController::BarrettHandController(
                                   this,
                                   std::placeholders::_1,
                                   std::placeholders::_2))),
-     _set_grasp_mode_srv(create_service<set_grasp_mode_t>(
-                             "~/set_grasp_mode",
-                             std::bind(
-                                 &BarrettHandController::set_grasp_mode_cb,
-                                 this,
-                                 std::placeholders::_1,
-                                 std::placeholders::_2))),
      _set_velocity_srv(create_service<set_velocity_t>(
                            "~/set_velocity",
                            std::bind(&BarrettHandController::set_velocity_cb,
@@ -308,8 +293,6 @@ BarrettHandController::BarrettHandController(
     RCLCPP_INFO_STREAM(get_logger(), "hand found");
     _hand->initialize();
     RCLCPP_INFO_STREAM(get_logger(), "hand initialized");
-    // _hand->open(barrett::Hand::GRASP, true);
-    // _hand->open(barrett::Hand::SPREAD, true);
     _hand->update();
     if (_torque_mode)
         _hand->setTorqueMode(barrett::Hand::WHOLE_HAND);
@@ -356,36 +339,6 @@ BarrettHandController::set_torque_mode_cb(req_cp<set_bool_t> req,
     res->success = true;
     RCLCPP_INFO_STREAM(get_logger(), "torque mode "
                        << (_torque_mode ? "enabled" : "disabled"));
-}
-
-void
-BarrettHandController::set_grasp_mode_cb(req_cp<set_grasp_mode_t> req,
-                                         res_p<set_grasp_mode_t>  res)
-{
-    res->success = true;
-
-    switch (req->mode)
-    {
-      case set_grasp_mode_t::Request::PINCH:
-        _grasp_mode = PINCH;
-        break;
-      case set_grasp_mode_t::Request::SCISSOR:
-        _grasp_mode = SCISSOR;
-        break;
-      case set_grasp_mode_t::Request::GRIP:
-        _grasp_mode = GRIP;
-        break;
-      default:
-        res->success = false;
-        break;
-    }
-
-    if (res->success)
-        RCLCPP_INFO_STREAM(get_logger(), "grasp mode set to"
-                           << (_grasp_mode == PINCH   ? "PINCH" :
-                               _grasp_mode == SCISSOR ? "SCISSOR" : "GRIP"));
-    else
-        RCLCPP_ERROR_STREAM(get_logger(), "unknown grasp mode");
 }
 
 void
@@ -562,8 +515,8 @@ BarrettHandController::joint_state_cb()
     _joint_state_pub->publish(_joint_state);
 
   // Check if the current goal is active.
-  //   if (!_current_goal_handle || !_current_goal_handle->is_active())
-  //       return;
+    if (!_current_goal_handle || !_current_goal_handle->is_active())
+        return;
 
   //   const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
 
@@ -625,7 +578,7 @@ BarrettHandController::goal_cb(const goal_uuid_t&,
                                goal_cp<gripper_command_t> goal)
 {
     RCLCPP_INFO_STREAM(get_logger(),
-		       "goal ACCEPTED: diameter=" << goal->diameter
+		       "goal ACCEPTED: gap=" << goal->gap
                        << ", spread=" << goal->spread*180.0/M_PI
 		       << " deg., max_effort=" << goal->max_effort);
     return goal_response_t::ACCEPT_AND_EXECUTE;
@@ -637,46 +590,46 @@ BarrettHandController::cancel_cb(goal_handle_p<gripper_command_t>)
     RCLCPP_DEBUG_STREAM(get_logger(), "accepted request for cancelling goal");
     return cancel_response_t::ACCEPT;
 }
+/*
+void
+BarrettHandController::handle_accepted_cb(
+    goal_handle_p<gripper_command_t> goal_handle)
+{
+    const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
 
-// void
-// BarrettHandController::handle_accepted_cb(
-//     goal_handle_p<gripper_command_t> goal_handle)
-// {
-//     const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
+  // If any active goal exists, abort it.
+    if (_current_goal_handle != nullptr && _current_goal_handle->is_active())
+    {
+        auto	result = std::make_unique<gripper_command_t::Result>();
+    //     result->position     = actual_position(_present_pos);
+        result->effort	     = 0.0;
+        result->stalled	     = false;
+        result->reached_goal = false;
+        _current_goal_handle->abort(std::move(result));
+        _current_goal_handle = nullptr;
 
-//   // If any active goal exists, abort it.
-//     if (_current_goal_handle != nullptr && _current_goal_handle->is_active())
-//     {
-//         auto	result = std::make_unique<gripper_command_t::Result>();
-//     //     result->position     = actual_position(_present_pos);
-//         result->effort	     = 0.0;
-//         result->stalled	     = false;
-//         result->reached_goal = false;
-//         _current_goal_handle->abort(std::move(result));
-//         _current_goal_handle = nullptr;
+        RCLCPP_WARN_STREAM(get_logger(), "previous goal ABORTED");
+    }
 
-//         RCLCPP_WARN_STREAM(get_logger(), "previous goal ABORTED");
-//     }
+    _last_move_time = now();
 
-//     _last_move_time = now();
+    // if (!send_move_command(goal_handle->get_goal()->command.position,
+    //     		   goal_handle->get_goal()->command.max_effort))
+    // {
+    //     auto	result = std::make_unique<gripper_command_t::Result>();
+    //     result->position     = actual_position(_present_pos);
+    //     result->effort	     = 0.0;
+    //     result->stalled	     = false;
+    //     result->reached_goal = false;
+    //     goal_handle->abort(std::move(result));
 
-//     // if (!send_move_command(goal_handle->get_goal()->command.position,
-//     //     		   goal_handle->get_goal()->command.max_effort))
-//     // {
-//     //     auto	result = std::make_unique<gripper_command_t::Result>();
-//     //     result->position     = actual_position(_present_pos);
-//     //     result->effort	     = 0.0;
-//     //     result->stalled	     = false;
-//     //     result->reached_goal = false;
-//     //     goal_handle->abort(std::move(result));
+    //     RCLCPP_ERROR_STREAM(get_logger(), "goal ABORTED");
+    //     return;
+    // }
 
-//     //     RCLCPP_ERROR_STREAM(get_logger(), "goal ABORTED");
-//     //     return;
-//     // }
-
-//     _current_goal_handle = goal_handle;
-// }
-
+    _current_goal_handle = goal_handle;
+}
+*/
 std::pair<double, double>
 BarrettHandController::actual_gap_and_effort(const joint_state_t& js) const
 {
@@ -737,24 +690,60 @@ BarrettHandController::outer_finger_pos(const vector_t& pos, size_t i) const
         return pos[4 + i];
 }
 
-std::pair<double, double>
-BarrettHandController::solve_for_finger_positions(GraspMode grasp_mode,
-                                                  double diameter,
-                                                  double spread_pos) const
+BarrettHandController::vector3_t
+BarrettHandController::finger_positions_from_gap(double gap,
+                                                 double spread_pos) const
 {
-    if (grasp_mode == SCISSOR)
-        spread_pos = M_PI/2;    // 90 deg.
+    constexpr double    epsilon = 1.0e-3;
 
-    const auto  r = (0.25*square(diameter) - square(_half_tread))
-                  / (_half_tread*std::sin(spread_pos) +
-                     std::sqrt(0.25*square(diameter) -
-                               square(_half_tread*std::cos(spread_pos))));
-    return {solve_for_finger_position(r - _inner_x),
-            solve_for_finger_position(0.5*diameter - _inner_x)};
+    if (spread_pos < epsilon || spread_pos > M_PI - epsilon)
+    {
+        spread_pos = (spread_pos < epsilon ? 0.0 : M_PI);  // GRIP mode
+        const auto      finger_pos = pos_from_height(gap);
+
+        return {finger_pos, finger_pos, spread_pos};
+    }
+    else
+    {
+        double  middle_finger_pos = 0.0;
+        if (M_PI/2 - epsilon < spread_pos && spread_pos < M_PI/2 + epsilon)
+            spread_pos = M_PI/2;                           // SCISSOR mode
+        else
+            middle_finger_pos = pos_from_radius(0.5*gap - _inner_x);
+
+        const auto  r = (0.25*square(gap) - square(_half_tread))
+                      / (_half_tread*std::sin(spread_pos) +
+                         std::sqrt(0.25*square(gap) -
+                                   square(_half_tread*std::cos(spread_pos))));
+
+        return {pos_from_radius(r - _inner_x), middle_finger_pos, spread_pos};
+    }
 }
 
 double
-BarrettHandController::solve_for_finger_position(double r) const
+BarrettHandController::pos_from_height(double h) const
+{
+    double      pos = 0.5*M_PI;   // Set initial position to 90 deg.
+    for (size_t i = 10; i--; )
+    {
+        const auto outer_finger_pos = _outer_finger_pos_mul * pos
+                                    + _outer_finger_pos_offset;
+        const auto y = _inner_finger_length * std::sin(pos)
+                     + _outer_finger_length * std::sin(outer_finger_pos);
+        if (std::abs(y - h) < 0.0001)
+            break;
+
+        const auto s = _inner_finger_length * std::cos(pos)
+                     + _outer_finger_length * std::cos(outer_finger_pos)
+                     * _outer_finger_pos_mul;
+        pos -= y/s;
+    }
+
+    return pos;
+}
+
+double
+BarrettHandController::pos_from_radius(double r) const
 {
     double      pos = 0.5*M_PI;   // Set initial position to 90 deg.
     for (size_t i = 10; i--; )

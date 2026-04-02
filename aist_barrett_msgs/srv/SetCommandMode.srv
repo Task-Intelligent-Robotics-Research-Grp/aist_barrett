@@ -1,7 +1,0 @@
-uint8 POSITION = 0  # commands with joint positions
-uint8 VELOCITY = 1  # commands with joint velocities
-uint8 EFFORT   = 2  # commands with joint torques
-
-uint8 mode
----
-bool  success
