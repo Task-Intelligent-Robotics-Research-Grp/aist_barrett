@@ -166,7 +166,7 @@ class BarrettHandController : public rclcpp::Node
     const vector_t                      _torque_coefficients;
 
   // Gripper command action stuffs
-    const action_p<gripper_command_t>   _gripper_command_srv;
+    // const action_p<gripper_command_t>   _gripper_command_srv;
     goal_handle_p<gripper_command_t>    _current_goal_handle;
     std::mutex                          _current_goal_mtx;
     rclcpp::Time                        _last_move_time;
@@ -216,14 +216,14 @@ BarrettHandController::BarrettHandController(
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
 
-     _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
-                      this, "~/gripper_cmd",
-                      std::bind(&BarrettHandController::goal_cb, this,
-                                std::placeholders::_1, std::placeholders::_2),
-                      std::bind(&BarrettHandController::cancel_cb,
-                                this, std::placeholders::_1),
-                      std::bind(&BarrettHandController::handle_accepted_cb,
-                                this, std::placeholders::_1))),
+     // _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
+     //                  this, "~/gripper_cmd",
+     //                  std::bind(&BarrettHandController::goal_cb, this,
+     //                            std::placeholders::_1, std::placeholders::_2),
+     //                  std::bind(&BarrettHandController::cancel_cb,
+     //                            this, std::placeholders::_1),
+     //                  std::bind(&BarrettHandController::handle_accepted_cb,
+     //                            this, std::placeholders::_1))),
      _current_goal_handle(nullptr),
      _current_goal_mtx(),
      _last_move_time(now()),
