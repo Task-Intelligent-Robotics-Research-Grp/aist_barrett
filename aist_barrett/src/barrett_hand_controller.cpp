@@ -51,6 +51,7 @@
 #include <aist_barrett_msgs/srv/set_velocity.hpp>
 #include <aist_barrett_msgs/srv/open_or_close.hpp>
 #include <aist_barrett_msgs/action/gripper_command.hpp>
+#include <Eigen/Core>
 
 using namespace std::chrono_literals;
 
@@ -89,7 +90,7 @@ class BarrettHandController : public rclcpp::Node
     using open_or_close_t       = aist_barrett_msgs::srv::OpenOrClose;
     using gripper_command_t     = aist_barrett_msgs::action::GripperCommand;
     using vector_t              = std::vector<double>;
-    using vector3_t             = std::array<double, 3>;
+    using array3_t              = Eigen::Array3d;
 
     template <class MSG>
     using msg_p         = typename MSG::UniquePtr;
@@ -153,7 +154,7 @@ class BarrettHandController : public rclcpp::Node
     double      outer_finger_pos(const vector_t& pos, size_t i) const   ;
 
 
-    vector3_t   finger_positions_from_gap(double gap,
+    array3_t    finger_positions_from_gap(double gap,
                                           double spread_pos)    const   ;
     double      pos_from_height(double h)                       const   ;
     double      pos_from_radius(double r)                       const   ;
@@ -518,58 +519,48 @@ BarrettHandController::joint_state_cb()
     if (!_current_goal_handle || !_current_goal_handle->is_active())
         return;
 
-  //   const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
+    const std::lock_guard<std::mutex>	lock(_current_goal_mtx);
 
-  // // Check if the current goal is requested to be cancelled.
-  //   if (_current_goal_handle->is_canceling())
-  //   {
-  //       auto	result = std::make_unique<gripper_command_t::Result>();
-  //       result->stalled = false;
-  //       _current_goal_handle->canceled(std::move(result));
-  //       _current_goal_handle = nullptr;
+    auto	result = std::make_unique<gripper_command_t::Result>();
+    set_result(result);
 
-  //       RCLCPP_WARN_STREAM(get_logger(), "goal CANCELED");
-  //       return;
-  //   }
+  // Check if the current goal is requested to be cancelled.
+    if (_current_goal_handle->is_canceling())
+    {
+        _current_goal_handle->canceled(std::move(result));
+        _current_goal_handle = nullptr;
 
-  //   const auto  [gap, effort] = actual_gap_and_effort(_joint_state);
+        RCLCPP_WARN_STREAM(get_logger(), "goal CANCELED");
+        return;
+    }
+    else if (is_moving(_joint_state.velocity))
+    {
+        _last_move_time = now;
+    }
+    else if (result->reached_goal)
+    {
+        _current_goal_handle->succeed(std::move(result));
+        _current_goal_handle = nullptr;
 
-  //   if (is_moving(_joint_state.velocity))
-  //       _last_move_time = now;
-  //   else if (reached_goal(gap, _joint_state.velocity))
-  //   {
-  //       auto	result = std::make_unique<gripper_command_t::Result>();
-  //       result->position     = gap;
-  //       result->effort	     = effort;
-  //       result->stalled	     = stalled(_joint_state.velocity);
-  //       result->reached_goal = true;
-  //       _current_goal_handle->succeed(std::move(result));
-  //       _current_goal_handle = nullptr;
+        RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[reached goal]");
+        return;
+    }
+    else if (result->stalled)
+    {
+        _current_goal_handle->succeed(std::move(result));
+        _current_goal_handle = nullptr;
 
-  //       RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[reached goal]");
-  //       return;
-  //   }
-  //   else if (stalled(_joint_state.velocity))
-  //   {
-  //       auto	result = std::make_unique<gripper_command_t::Result>();
-  //       result->position     = gap;
-  //       result->effort	     = effort;
-  //       result->stalled	     = true;
-  //       result->reached_goal = false;
-  //       _current_goal_handle->succeed(std::move(result));
-  //       _current_goal_handle = nullptr;
+        RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[stalled]");
+        return;
+    }
 
-  //       RCLCPP_INFO_STREAM(get_logger(), "goal SUCCEEDED[stalled]");
-  //       return;
-  //   }
-
-  // // Publish speed and filtered current as a feedback.
-  //   auto	feedback = std::make_unique<gripper_command_t::Feedback>();
-  //   feedback->position	   = gap;
-  //   feedback->effort	   = effort;
-  //   feedback->stalled	   = stalled(_joint_state.velocity);
-  //   feedback->reached_goal = reached_goal(gap, _joint_state.velocity);
-  //   _current_goal_handle->publish_feedback(std::move(feedback));
+  // Publish speed and filtered current as a feedback.
+    auto	feedback = std::make_unique<gripper_command_t::Feedback>();
+    feedback->position	   = result->gap;
+    feedback->effort	   = result->effort;
+    feedback->stalled	   = result->stalled;
+    feedback->reached_goal = result->reached_goal;
+    _current_goal_handle->publish_feedback(std::move(feedback));
 }
 
 // Action stuffs
@@ -590,7 +581,7 @@ BarrettHandController::cancel_cb(goal_handle_p<gripper_command_t>)
     RCLCPP_DEBUG_STREAM(get_logger(), "accepted request for cancelling goal");
     return cancel_response_t::ACCEPT;
 }
-/*
+
 void
 BarrettHandController::handle_accepted_cb(
     goal_handle_p<gripper_command_t> goal_handle)
@@ -601,35 +592,20 @@ BarrettHandController::handle_accepted_cb(
     if (_current_goal_handle != nullptr && _current_goal_handle->is_active())
     {
         auto	result = std::make_unique<gripper_command_t::Result>();
-    //     result->position     = actual_position(_present_pos);
-        result->effort	     = 0.0;
-        result->stalled	     = false;
-        result->reached_goal = false;
+        set_result(result);
         _current_goal_handle->abort(std::move(result));
         _current_goal_handle = nullptr;
 
         RCLCPP_WARN_STREAM(get_logger(), "previous goal ABORTED");
     }
-
-    _last_move_time = now();
-
-    // if (!send_move_command(goal_handle->get_goal()->command.position,
-    //     		   goal_handle->get_goal()->command.max_effort))
-    // {
-    //     auto	result = std::make_unique<gripper_command_t::Result>();
-    //     result->position     = actual_position(_present_pos);
-    //     result->effort	     = 0.0;
-    //     result->stalled	     = false;
-    //     result->reached_goal = false;
-    //     goal_handle->abort(std::move(result));
-
-    //     RCLCPP_ERROR_STREAM(get_logger(), "goal ABORTED");
-    //     return;
-    // }
-
     _current_goal_handle = goal_handle;
+
+  // Send a move command to the gripper.
+    _goal_pos = send_move_command(desired_position(goal_handle->get_goal()),
+                                  desired_effort(goal_handle->get_goal()));
+    _last_move_time = now();
 }
-*/
+
 std::pair<double, double>
 BarrettHandController::actual_gap_and_effort(const joint_state_t& js) const
 {
@@ -641,30 +617,34 @@ BarrettHandController::actual_gap_and_effort(const joint_state_t& js) const
 }
 
 bool
-BarrettHandController::is_moving(const vector_t& vel) const
+BarrettHandController::is_moving() const
 {
+    const auto& vel = _joint_state.velocity;
     return (std::abs(vel[0]) < _vel_thresh && std::abs(vel[1]) < _vel_thresh &&
             std::abs(vel[2]) < _vel_thresh && std::abs(vel[3]) < _vel_thresh);
 }
 
-// bool
-// BarrettHandController::reached_goal(double gap, const vector_t& vel) const
-// {
-//     // RCLCPP_DEBUG_STREAM(get_logger(), "*** gap=" << gap << ", goal_pos="
-//     //     		<< _current_goal_handle->get_goal()->command.position
-//     //     		<< ", vel=" << vel);
-//     return !is_moving(vel) &&
-// 	   std::abs(gap - goal_pos(_current_goal_handle
-// 				   ->get_goal()->command.position)) <= 0.001;
-// }
+bool
+BarrettHandController::reached_goal() const
+{
+    // RCLCPP_DEBUG_STREAM(get_logger(), "*** gap=" << gap << ", goal_pos="
+    //     		<< _current_goal_handle->get_goal()->command.position
+    //     		<< ", vel=" << vel);
+    const auto& pos = _joint_state.position;
+    return (!is_moving() &&
+            std::abs(pos[0] - _goal_pos[0]) < _pos_thresh &&
+            std::abs(pos[1] - _goal_pos[1]) < _pos_thresh &&
+            std::abs(pos[2] - _goal_pos[2]) < _pos_thresh &&
+            std::abs(pos[3] - _goal_pos[3]) < _pos_thresh);
+}
 
-// bool
-// BarrettHandController::stalled(const vector_t& vel) const
-// {
-//     return !is_moving(vel) && now() - _last_move_time > _stall_timeout;
-// }
+bool
+BarrettHandController::stalled() const
+{
+    return !is_moving() && now() - _last_move_time > _stall_timeout;
+}
 
-double
+BarrettHandController::array3d_t
 BarrettHandController::goal_pos(double position) const
 {
 }
@@ -690,7 +670,7 @@ BarrettHandController::outer_finger_pos(const vector_t& pos, size_t i) const
         return pos[4 + i];
 }
 
-BarrettHandController::vector3_t
+BarrettHandController::array3_t
 BarrettHandController::finger_positions_from_gap(double gap,
                                                  double spread_pos) const
 {
