@@ -183,7 +183,7 @@ class BarrettHandController : public rclcpp::Node
                         return GRIP;
                 }
 
-    double      actual_gap()                                    const   ;
+    double      actual_gap(const joint_state_t& joint_state)    const   ;
     double      actual_effort(const joint_state_t& joint_state) const
                 {
                     const auto& eff = joint_state.effort;
@@ -693,10 +693,9 @@ void
 BarrettHandController::set_result(
     const result_p<gripper_command_t>& result) const
 {
-    result->gap          = actual_gap();
+    result->gap          = actual_gap(_joint_state);
     result->spread       = _joint_state.position[3];
-    result->effort       = (_joint_state.effort[0] + _joint_state.effort[1] +
-                            _joint_state.effort[2]) / 3.0;
+    result->effort       = actual_effort(_joint_state);
     result->stalled      = stalled(_joint_state);
     result->reached_goal = reached_goal(_joint_state);
 }
@@ -735,7 +734,7 @@ BarrettHandController::goal_position(
 }
 
 double
-BarrettHandController::actual_gap() const
+BarrettHandController::actual_gap(const joint_state_t& joint_state) const
 {
 }
 
