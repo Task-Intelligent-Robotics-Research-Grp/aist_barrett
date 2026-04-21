@@ -150,8 +150,8 @@ class BarrettHandController : public rclcpp::Node
                     goal_handle_p<gripper_command_t> goal_handle)       ;
     cancel_response_t
                 cancel_cb(const goal_handle_p<gripper_command_t>)       ;
-    void        set_result(const result_p<gripper_command_t>& result)
-                                                                const   ;
+    void        set_result(const result_p<gripper_command_t>& result,
+                           const goal_cp<gripper_command_t>& goal) const;
 
   // Utilities
     array4d     send_move_command(const array4d& position,
@@ -162,10 +162,9 @@ class BarrettHandController : public rclcpp::Node
                 {
                 }
 
-    array4d     goal_position(const goal_cp<gripper_command_t>& goal)
-                                                                const   ;
+    array4d     goal_pos(const goal_cp<gripper_command_t>& goal) const  ;
     static array4d
-                goal_effort(const goal_cp<gripper_command_t>& goal)
+                goal_eff(const goal_cp<gripper_command_t>& goal)
                 {
                     return array4d{goal->max_effort, goal->max_effort,
                                    goal->max_effort, 0.0};
@@ -183,8 +182,9 @@ class BarrettHandController : public rclcpp::Node
                         return GRIP;
                 }
 
-    double      actual_gap(const joint_state_t& joint_state)    const   ;
-    double      actual_effort(const joint_state_t& joint_state) const
+    double      actual_gap(const joint_state_t& joint_state,
+                           const goal_cp<gripper_command_t>& goal) const;
+    double      actual_eff(const joint_state_t& joint_state) const
                 {
                     const auto& eff = joint_state.effort;
                     return (eff[0] + eff[1] + eff[2]) / 3.0;
@@ -214,20 +214,31 @@ class BarrettHandController : public rclcpp::Node
                 }
 
     double      newton_meters(double torque)                    const   ;
-    double      finger_radius(double gap, double spread) const
+    double      goal_radius(double gap, double spread) const
                 {
                     return (0.25*square(gap) - square(_half_tread))
                          / (_half_tread*std::sin(spread) +
                             std::sqrt(0.25*square(gap) -
                                       square(_half_tread*std::cos(spread))));
                 }
+    double      radius_from_pos(double pos) const
+                {
+                    return _inner_x
+                         + _inner_finger_length * std::cos(pos)
+                         + _outer_finger_length *
+                           std::cos(outer_finger_pos(pos));
+                }
+    double      height_from_pos(double pos) const
+                {
+                    return _inner_finger_length * std::sin(pos)
+                         + _outer_finger_length *
+                           std::sin(outer_finger_pos(pos));
+                }
     double      outer_finger_pos(double pos) const
                 {
                     return _outer_finger_pos_mul * pos
                          + _outer_finger_pos_offset;
                 }
-    array4d     finger_positions_from_gap(double gap,
-                                          double spread_pos)    const   ;
     double      pos_from_height(double h)                       const   ;
     double      pos_from_radius(double r)                       const   ;
 
@@ -607,7 +618,7 @@ BarrettHandController::joint_state_cb()
         return;
 
     auto	result = std::make_unique<gripper_command_t::Result>();
-    set_result(result);
+    set_result(result, _gripper_command_goal_handle->get_goal());
 
   // Check if the current goal is requested to be cancelled.
     if (_gripper_command_goal_handle->is_canceling())
@@ -651,9 +662,9 @@ BarrettHandController::goal_cb(const goal_uuid_t&,
                                goal_cp<gripper_command_t> goal)
 {
     RCLCPP_INFO_STREAM(get_logger(),
-		       "goal ACCEPTED: gap=" << goal->gap
+		       "goal ACCEPTED[gap=" << goal->gap
                        << ", spread=" << goal->spread*180.0/M_PI
-		       << " deg., max_effort=" << goal->max_effort);
+		       << " deg., max_effort=" << goal->max_effort << ']');
     return goal_response_t::ACCEPT_AND_EXECUTE;
 }
 
@@ -675,7 +686,7 @@ BarrettHandController::handle_accepted_cb(
         _gripper_command_goal_handle->is_active())
     {
         auto	result = std::make_unique<gripper_command_t::Result>();
-        set_result(result);
+        set_result(result, _gripper_command_goal_handle->get_goal());
         _gripper_command_goal_handle->abort(std::move(result));
         _gripper_command_goal_handle = nullptr;
 
@@ -684,58 +695,76 @@ BarrettHandController::handle_accepted_cb(
     _gripper_command_goal_handle = goal_handle;
 
   // Send a move command to the gripper.
-    _goal_pos = send_move_command(goal_position(goal_handle->get_goal()),
-                                  goal_effort(goal_handle->get_goal()));
+    _goal_pos = send_move_command(goal_pos(goal_handle->get_goal()),
+                                  goal_eff(goal_handle->get_goal()));
     _last_move_time = now();
 }
 
 void
-BarrettHandController::set_result(
-    const result_p<gripper_command_t>& result) const
+BarrettHandController::set_result(const result_p<gripper_command_t>& result,
+                                  const goal_cp<gripper_command_t>& goal) const
 {
-    result->gap          = actual_gap(_joint_state);
+    result->gap          = actual_gap(_joint_state, goal);
     result->spread       = _joint_state.position[3];
-    result->effort       = actual_effort(_joint_state);
+    result->effort       = actual_eff(_joint_state);
     result->stalled      = stalled(_joint_state);
     result->reached_goal = reached_goal(_joint_state);
 }
 
 // Utilities
 BarrettHandController::array4d
-BarrettHandController::goal_position(
-    const goal_cp<gripper_command_t>& goal) const
+BarrettHandController::goal_pos(const goal_cp<gripper_command_t>& goal) const
 {
-    array4d     position;
+    array4d     pos;
 
     switch (mode(goal))
     {
       case PINCH:
-        position[0] = pos_from_radius(finger_radius(goal->gap, goal->spread));
-        position[1] = position[0];
-        position[2] = pos_from_radius(0.5*goal->gap);
-        position[3] = goal->spread;
+        pos[0] = pos_from_radius(goal_radius(goal->gap, goal->spread));
+        pos[1] = pos[0];
+        pos[2] = pos_from_radius(0.5*goal->gap);
+        pos[3] = goal->spread;
         break;
       case SCISSOR:
-        position[0] = pos_from_radius(0.5*goal->gap - _half_tread);
-        position[1] = position[0];
-        position[2] = 0.0;
-        position[3] = M_PI/2;
+        pos[0] = pos_from_radius(0.5*goal->gap - _half_tread);
+        pos[1] = pos[0];
+        pos[2] = 0.0;
+        pos[3] = M_PI/2;
         break;
       case GRIP:
       default:
-        position[0] = pos_from_height(goal->gap);
-        position[1] = position[0];
-        position[2] = position[0];
-        position[3] = (goal->spread < M_PI/2 ? 0.0 : M_PI);
+        pos[0] = pos_from_height(goal->gap);
+        pos[1] = pos[0];
+        pos[2] = pos[0];
+        pos[3] = (goal->spread < M_PI/2 ? 0.0 : M_PI);
         break;
     }
 
-    return position;
+    return pos;
 }
 
 double
-BarrettHandController::actual_gap(const joint_state_t& joint_state) const
+BarrettHandController::actual_gap(const joint_state_t& joint_state,
+                                  const goal_cp<gripper_command_t>& goal) const
 {
+    using vector3d = Eigen::Vector3d;
+
+    const auto  c   = std::cos(joint_state.position[3]);
+    const auto  s   = std::sin(joint_state.position[3]);
+
+    const auto  r_l = radius_from_pos(joint_state.position[0]);
+
+    vector3d    x_l{r_l};
+
+    double      gap;
+
+    switch (mode(goal))
+    {
+      case PINCH:
+        break;
+    }
+
+    return gap;
 }
 
 double
@@ -751,14 +780,31 @@ BarrettHandController::newton_meters(double torque) const
 }
 
 double
+BarrettHandController::pos_from_radius(double r) const
+{
+    double      p = M_PI/2;   // Set initial position to 90 deg.
+    for (size_t i = 10; i--; )
+    {
+        const auto x = radius_from_pos(p);
+        if (std::abs(x - r) < 0.0001)
+            break;
+
+        const auto s = _inner_finger_length * std::sin(p)
+                     + _outer_finger_length * std::sin(outer_finger_pos(p))
+                     * _outer_finger_pos_mul;
+        p += x/s;
+    }
+
+    return p;
+}
+
+double
 BarrettHandController::pos_from_height(double h) const
 {
     double      p = M_PI/2;   // Set initial position to 90 deg.
     for (size_t i = 10; i--; )
     {
-        const auto q = outer_finger_pos(p);
-        const auto z = _inner_finger_length * std::sin(p)
-                     + _outer_finger_length * std::sin(q);
+        const auto z = height_from_pos(p);
         if (std::abs(z - h) < 0.0001)
             break;
 
@@ -766,28 +812,6 @@ BarrettHandController::pos_from_height(double h) const
                      + _outer_finger_length * std::cos(q)
                      * _outer_finger_pos_mul;
         p -= z/s;
-    }
-
-    return p;
-}
-
-double
-BarrettHandController::pos_from_radius(double r) const
-{
-    double      p = M_PI/2;   // Set initial position to 90 deg.
-    for (size_t i = 10; i--; )
-    {
-        const auto q = outer_finger_pos(p);
-        const auto x = _inner_x
-                     + _inner_finger_length * std::cos(p)
-                     + _outer_finger_length * std::cos(q);
-        if (std::abs(x - r) < 0.0001)
-            break;
-
-        const auto s = _inner_finger_length * std::sin(p)
-                     + _outer_finger_length * std::sin(q)
-                     * _outer_finger_pos_mul;
-        p += x/s;
     }
 
     return p;
