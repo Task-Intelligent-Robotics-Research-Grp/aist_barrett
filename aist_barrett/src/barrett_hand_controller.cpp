@@ -754,7 +754,7 @@ BarrettHandController::actual_gap(const joint_state_t& joint_state,
 
     const auto  r_l = radius_from_pos(joint_state.position[0]);
 
-    vector3d    x_l{r_l};
+  //    vector3d    x_l{r_l};
 
     double      gap;
 
@@ -809,7 +809,7 @@ BarrettHandController::pos_from_height(double h) const
             break;
 
         const auto s = _inner_finger_length * std::cos(p)
-                     + _outer_finger_length * std::cos(q)
+                     + _outer_finger_length * std::cos(outer_finger_pos(p))
                      * _outer_finger_pos_mul;
         p -= z/s;
     }
