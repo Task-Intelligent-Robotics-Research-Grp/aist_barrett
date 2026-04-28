@@ -1,15 +1,17 @@
-float64 gap         # desired diameter/distance
-float64 spread      # desired spread angle
-float64 max_effort  # maximum effort to be applied
+uint8 PINCH     = 0   # grasp with 3 fingers
+uint8 ENCOMPASS = 1   # spread =   0 deg, grasp with palm as well as 3 fingers
+uint8 SCISSOR   = 2   # spread =  90 deg, grasp with left and right fingers
+uint8 GRIP      = 3   # spread = 180 def, grasp with palm as well as 3 fingers
+
+float64 gap           # desired diameter/distance
+float64 spread        # desired spread angle
+float64 max_effort    # maximum effort to be applied
+uint8   mode          # PINCH/ENCOMPASS/SCISSOR/GRIP
 ---
-float64 gap         # The current gripper gap size (in meters)
-float64 spread      # The current gripper spread angle (in radians)
-float64 effort      # The current effort exerted (in Newtons)
-bool stalled        # True iff the gripper is exerting max effort and not moving
-bool reached_goal   # True iff the gripper position has reached the commanded setpoint
+float64 effort        # The current effort exerted (in Newtons)
+bool    stalled       # True iff max effort exerted and not moving
+bool    reached_goal  # True iff reached the commanded position
 ---
-float64 gap         # The current gripper gap size (in meters)
-float64 spread      # The current gripper spread angle (in radians)
-float64 effort      # The current effort exerted (in Newtons)
-bool stalled        # True iff the gripper is exerting max effort and not moving
-bool reached_goal   # True iff the gripper position has reached the commanded setpoint
+float64 effort        # The current effort exerted (in Newtons)
+bool    stalled       # True iff max effort exerted and not moving
+bool    reached_goal  # True iff reached the commanded position
