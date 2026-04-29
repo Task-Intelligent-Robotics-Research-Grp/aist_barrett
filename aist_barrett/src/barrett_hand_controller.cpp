@@ -155,7 +155,7 @@ class BarrettHandController : public rclcpp::Node
                         pos[0] = pos_from_radius(0.5*goal->gap);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
-                        pos[3] = goal->spread;
+                        pos[3] = std::clamp(goal->spread, 0.0, M_PI);
                         break;
                       case gripper_command_t::Goal::ENCOMPASS:
                         pos[0] = pos_from_height(goal->gap);
