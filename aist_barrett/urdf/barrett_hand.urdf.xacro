@@ -12,7 +12,7 @@
 
     <xacro:property name="base_height"		value="0.025"/>
     <xacro:property name="palm_height"		value="0.061"/>
-    <xacro:property name="tip_height"		value="0.156"/>
+    <xacro:property name="tcp_height"		value="0.156"/>
     <xacro:property name="half_tread"		value="0.025"/>
     <xacro:property name="inner_x"		value="0.050"/>
     <xacro:property name="inner_z"		value="0.035"/>
@@ -180,9 +180,9 @@
 		     parent="${prefix}base_link">
       <origin xyz="0.0 0.0 ${palm_height}" rpy="0 0 0"/>
     </xacro:set_frame>
-    <xacro:set_frame name="${prefix}tip_link"
+    <xacro:set_frame name="${prefix}tcp_link"
 		     parent="${prefix}base_link">
-      <origin xyz="0.0 0.0 ${tip_height}" rpy="0 ${radians(180)} 0"/>
+      <origin xyz="0.0 0.0 ${tcp_height}" rpy="0 ${radians(180)} 0"/>
     </xacro:set_frame>
 
     <!-- Spread -->
