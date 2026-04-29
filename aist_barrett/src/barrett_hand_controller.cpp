@@ -51,7 +51,6 @@
 #include <aist_barrett_msgs/srv/set_velocity.hpp>
 #include <aist_barrett_msgs/srv/open_or_close.hpp>
 #include <aist_barrett_msgs/action/gripper_command.hpp>
-#include <Eigen/Core>
 
 using namespace std::chrono_literals;
 
@@ -90,7 +89,7 @@ class BarrettHandController : public rclcpp::Node
     using open_or_close_t       = aist_barrett_msgs::srv::OpenOrClose;
     using gripper_command_t     = aist_barrett_msgs::action::GripperCommand;
     using vector_t              = std::vector<double>;
-    using array4d               = Eigen::Array4d;
+    using array4d               = std::array<double, 4>;
 
     template <class MSG>
     using msg_p         = typename MSG::UniquePtr;
