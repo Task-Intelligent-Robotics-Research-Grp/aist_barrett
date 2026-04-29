@@ -14,7 +14,7 @@ def launch_setup(context):
                                     FindPackageShare('aist_barrett'), 'urdf',
                                     'barrett_hand.urdf'
                                 ])
-                                ' mimic_outer_joint:=false',
+                                ' mimic_outer_joints:=false',
                             ]),
                             value_type=str)
     return [
