@@ -1,7 +1,9 @@
+from launch                            import LaunchDescription
 from launch.actions                    import (OpaqueFunction,
                                                IncludeLaunchDescription)
 from launch.substitutions              import (Command, FindExecutable,
-                                               PathJoinSubstitution)
+                                               PathJoinSubstitution,
+                                               ThisLaunchFileDir)
 from launch_ros.substitutions          import FindPackageShare
 from launch_ros.actions                import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -13,7 +15,7 @@ def launch_setup(context):
                                 PathJoinSubstitution([
                                     FindPackageShare('aist_barrett'), 'urdf',
                                     'barrett_hand.urdf'
-                                ])
+                                ]),
                                 ' mimic_outer_joints:=false',
                             ]),
                             value_type=str)
