@@ -37,16 +37,16 @@ Client of gripper controller of aist_barrett__msgs/action/GripperCommand type
 @author t.ueshiba@aist.go.jp
 """
 import rclpy, threading
-from rclpy.duration           import Duration
-from rclpy.parameter_client   import AsyncParameterClient
-from rclpy.callback_groups    import MutuallyExclusiveCallbackGroup
-from action_msgs.msg          import GoalStatus
-from std_srvs.srv             import SetBool, Trigger
-from aist_barrett_msgs.action import GripperCommand
-from aist_barrett_msgs.srv    import SetVelocity
-from aist_barrett_msgs.msg    import TactileStates
-from srv_and_action_wrappers.service_client import ServiceClient
-from srv_and_action_wrappers.action_client  import SimpleActionClient
+from rclpy.duration               import Duration
+from rclpy.parameter_client       import AsyncParameterClient
+from rclpy.callback_groups        import MutuallyExclusiveCallbackGroup
+from action_msgs.msg              import GoalStatus
+from std_srvs.srv                 import SetBool, Trigger
+from aist_barrett_msgs.action     import GripperCommand
+from aist_barrett_msgs.srv        import SetVelocity
+from aist_barrett_msgs.msg        import TactileStates
+from task_wrappers.service_client import ServiceClient
+from task_wrappers.action_client  import SimpleActionClient
 
 ######################################################################
 #  class BarrettHand                                                 #
