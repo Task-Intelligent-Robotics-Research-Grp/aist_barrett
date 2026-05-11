@@ -53,23 +53,23 @@ from task_wrappers.action_client  import SimpleActionClient
 ######################################################################
 class BarrettHand(SimpleActionClient):
     def __init__(self, node, name='bhand'):
-        self._name           = name
-        self._callback_group = MutuallyExclusiveCallbackGroup()
+        self._name = name
+        self._cbg  = MutuallyExclusiveCallbackGroup()
 
         # Create action client for gripper command.
         controller_ns = name + '_controller'
         super().__init__(node, GripperCommand, controller_ns + '/gripper_cmd',
-                         self._callback_group)
+                         callback_group=self._cbg)
 
         # Create service client for setting torque mode.
         self._set_torque_mode \
             = ServiceClient(node, SetBool, controller_ns + '/set_torque_mode',
-                            callback_group=self._callback_group)
+                            callback_group=self._cbg)
 
         # Create service client for setting velocity.
         self._set_velocity \
             = ServiceClient(node, SetVelocity, controller_ns + '/set_velocity',
-                            callback_group=self._callback_group)
+                            callback_group=self._cbg)
 
         self._properties = {'release_gap': 0.1,
                             'spread':      0.0,
@@ -99,26 +99,27 @@ class BarrettHand(SimpleActionClient):
     def set_torque_mode(self, enable):
         return self._set_velocity.call(SetBool.Request(data=enable))
 
-    def set_velocity(self, velocity, spread=False):
+    def set_velocity(self, velocity, *, spread=False):
         return self._set_velocity.call(SetVelocity.Request(velocity=velocity,
                                                            spread=spread))
 
     def pregrasp(self):
-        self.release(0.0)
+        self.release(timeout_sec=0.0)
 
-    def grasp(self, timeout_sec=None):
-        return self.move(self.properties['grasp_gap'],
-                         None, None, None, None, timeout_sec)
+    def grasp(self, *, timeout_sec=None):
+        return self.move(0.0, spread=None, max_effort=None, mode=None,
+                         timeout_sec=timeout_sec)
 
     def postgrasp(self):
-        self.grasp(0.0)
+        self.grasp(timeout_sec=0.0)
 
-    def release(self, timeout_sec=None):
+    def release(self, *, timeout_sec=None):
         return self.move(self.properties['release_gap'],
-                         None, 0.0, None, None, timeout_sec)
+                         spread=None, max_effort=0.0,
+                         mode=None, timeout_sec=timeout_sec)
 
-    def move(self, gap, spread=None, max_effort=None, mode=None,
-             timeout_sec=None):
+    def move(self, gap, *,
+             spread=None, max_effort=None, mode=None, timeout_sec=None):
         if not spread:
             spread = self.properties['spread']
         if not max_effort:

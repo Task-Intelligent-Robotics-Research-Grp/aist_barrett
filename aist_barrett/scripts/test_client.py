@@ -77,30 +77,30 @@ class BarrettHandClient(Node):
 
             key = input('>> ')
             if key == 'g':
-                self._gripper.grasp(timeout=None)
+                self._gripper.grasp(timeout_sec=0.0)
             elif key == 'r':
-                self._gripper.release(timeout=None)
+                self._gripper.release(timeout_sec=0.0)
             elif is_float(key):
                 self._gripper.move(float(key),
-                                   self._gripper.paremeters['spread'],
-                                   timeout=None)
+                                   spread=self._gripper.paremeters['spread'],
+                                   timeout_sec=None)
             elif key == 'c':
-                self._gripper.cancel()
+                self._gripper.cancel_goal()
             elif key == 'w':
                 status, result = self._gripper \
-                                     .wait(timeout=Duration(seconds=10))
+                                     .wait(timeout_sec=10.0)
                 print(result)
             elif key == 's':
                 spread = min(max(0.0, float(input('  spread: '))), 180.0)
-                self._gripper.parameters['spread'] = radians(spread)
+                self._gripper.properties['spread'] = radians(spread)
                 print('spread set to %f' % spread)
             elif key == 'e':
                 effort = min(max(0.0, float(input('  effort: '))), 180.0)
-                self._gripper.parameters['max_effort'] = effort
+                self._gripper.properties['max_effort'] = effort
                 print('max_effort set to %f' % effort)
             elif key == 'm':
                 mode = int(input('  mode(0: PINCH, 1: ENCOMPASS, 2: SCISSOR, 3: GRIP): '))
-                self._gripper.parameters['mode'] = mode
+                self._gripper.properties['mode'] = mode
                 print('mode set to %f' % mode)
             elif key == 'v':
                 velocity = float(input('  velocity: '))
