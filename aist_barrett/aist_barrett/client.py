@@ -31,11 +31,6 @@
 #
 #  Author: Toshio Ueshiba (t.ueshiba@aist.go.jp)
 #
-"""
-Client of gripper controller of aist_barrett__msgs/action/GripperCommand type
-@file   __init__.py
-@author t.ueshiba@aist.go.jp
-"""
 import rclpy, threading
 from rclpy.duration               import Duration
 from rclpy.parameter_client       import AsyncParameterClient
@@ -48,9 +43,9 @@ from aist_barrett_msgs.msg        import TactileStates
 from task_wrappers.service_client import ServiceClient
 from task_wrappers.action_client  import SimpleActionClient
 
-######################################################################
-#  class BarrettHand                                                 #
-######################################################################
+#*********************************************************************
+#  class BarrettHand                                                 *
+#*********************************************************************
 class BarrettHand(SimpleActionClient):
     def __init__(self, node, name='bhand'):
         self._name = name
@@ -71,7 +66,7 @@ class BarrettHand(SimpleActionClient):
             = ServiceClient(node, SetVelocity, controller_ns + '/set_velocity',
                             callback_group=self._cbg)
 
-        self._parameters = {'release_gap': 0.1,
+        self._parameters = {'release_gap': 0.32,
                             'spread':      0.0,
                             'max_effort':  10.0,
                             'mode':        GripperCommand.Goal.PINCH}
@@ -90,9 +85,8 @@ class BarrettHand(SimpleActionClient):
 
     @property
     def parameters(self):
-        """
-        Return a dictionary of gripper parameters
-        @return a dictionary of gripper parameters with string keys
+        """ Return a dictionary of gripper parameters.
+        :return: Dictionary of gripper parameters with string keys.
         """
         return self._parameters
 
