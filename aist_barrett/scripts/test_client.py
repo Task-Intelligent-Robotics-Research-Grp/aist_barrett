@@ -36,7 +36,6 @@
 import rclpy, sys, threading
 from math                import radians
 from rclpy.node          import Node
-from rclpy.duration      import Duration
 from aist_barrett.client import BarrettHand
 
 #########################################################################

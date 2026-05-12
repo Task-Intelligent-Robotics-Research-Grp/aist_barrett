@@ -297,6 +297,7 @@ class BarrettHandController : public rclcpp::Node
     std::mutex                          _gripper_command_goal_mtx;
     rclcpp::Time                        _last_move_time;
     const rclcpp::Duration              _stall_timeout;
+    uint8_t                             _current_mode;
 
   // Geometric dimensions required for computiong IK
     static constexpr double     _half_tread              = 0.025;
@@ -399,7 +400,8 @@ BarrettHandController::BarrettHandController(
      _last_move_time(now()),
      _stall_timeout(std::chrono::duration<double>(
                         ddynamic_reconfigure2::declare_read_only_parameter(
-                            this, "stall_timeout", 1.0)))
+                            this, "stall_timeout", 1.0))),
+     _current_mode(gripper_command_t::Goal::PINCH)
 {
     barrett::installExceptionHandler();
     if (!_hand)
@@ -718,6 +720,13 @@ BarrettHandController::handle_accepted_cb(
         RCLCPP_WARN_STREAM(get_logger(), "previous goal ABORTED");
     }
     _gripper_command_goal_handle = goal_handle;
+
+  // If required to change mode, fully open all fingers to avoid collision.
+    if (goal_handle->get_goal()->mode != _current_mode)
+    {
+        _current_mode = goal_handle->get_goal()->mode;
+        _hand->open(barrett::Hand::GRASP, true);
+    }
 
   // Send a move command to the gripper.
     _goal_pos = send_move_command(goal_pos(goal_handle->get_goal()),
