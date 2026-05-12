@@ -71,7 +71,7 @@ class BarrettHand(SimpleActionClient):
             = ServiceClient(node, SetVelocity, controller_ns + '/set_velocity',
                             callback_group=self._cbg)
 
-        self._properties = {'release_gap': 0.1,
+        self._parameters = {'release_gap': 0.1,
                             'spread':      0.0,
                             'max_effort':  10.0,
                             'mode':        GripperCommand.Goal.PINCH}
@@ -89,12 +89,12 @@ class BarrettHand(SimpleActionClient):
         return self._name + '_tip_link'
 
     @property
-    def properties(self):
+    def parameters(self):
         """
-        Return a dictionary of gripper properties
-        @return a dictionary of gripper properties with string keys
+        Return a dictionary of gripper parameters
+        @return a dictionary of gripper parameters with string keys
         """
-        return self._properties
+        return self._parameters
 
     def set_torque_mode(self, enable):
         return self._set_velocity.call(SetBool.Request(data=enable))
@@ -114,18 +114,18 @@ class BarrettHand(SimpleActionClient):
         self.grasp(timeout_sec=0.0)
 
     def release(self, *, timeout_sec=None):
-        return self.move(self.properties['release_gap'],
+        return self.move(self.parameters['release_gap'],
                          spread=None, max_effort=0.0,
                          mode=None, timeout_sec=timeout_sec)
 
     def move(self, gap, *,
              spread=None, max_effort=None, mode=None, timeout_sec=None):
         if not spread:
-            spread = self.properties['spread']
+            spread = self.parameters['spread']
         if not max_effort:
-            max_effort = self.properties['max_effort']
+            max_effort = self.parameters['max_effort']
         if not mode:
-            mode = self.properties['mode']
+            mode = self.parameters['mode']
         return self.send_goal(GripperCommand.Goal(gap=gap, spread=spread,
                                                   max_effort=max_effort,
                                                   mode=mode),
