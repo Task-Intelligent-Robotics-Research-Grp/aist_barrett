@@ -44,6 +44,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(
   PROGRAMS
     scripts/joint_state_to_array.py
+    scripts/test_client.py
   DESTINATION
     lib/${PROJECT_NAME}
 )

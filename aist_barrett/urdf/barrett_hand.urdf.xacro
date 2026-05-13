@@ -70,7 +70,7 @@
       <joint name="${fingerprefix}outer_joint"
 	     type="revolute">
 	<origin xyz="${inner_finger_length} 0.0 0.0"
-		rpy="0.0 0.0 ${radians(35)}"/>
+		rpy="0.0 0.0 ${radians(42)}"/>
 	<parent link="${fingerprefix}inner_link"/>
 	<child  link="${fingerprefix}outer_link"/>
 	<axis xyz="0 0 1"/>

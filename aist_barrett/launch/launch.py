@@ -1,18 +1,18 @@
 from launch                            import LaunchDescription
-from launch.actions                    import OpaqueFunction
+from launch.actions                    import (DeclareLaunchArgument,
+                                               OpaqueFunction)
 from launch.substitutions              import (LaunchConfiguration,
                                                PathJoinSubstitution)
 from launch_ros.actions                import Node, LoadComposableNodes
 from launch_ros.descriptions           import ComposableNode
 from launch_ros.substitutions          import FindPackageShare
-from aist_bringup.launch_common        import declare_launch_arguments
 from launch_ros.parameter_descriptions import ParameterFile
 
 launch_arguments = [
     {
-        'name':        'device_name',
+        'name':        'gripper_name',
         'default':     'bhand',
-        'description': 'device name'
+        'description': 'name of the gripper'
     },
     {
         'name':        'param_file',
@@ -40,10 +40,17 @@ launch_arguments = [
     }
 ]
 
+def declare_launch_arguments(args):
+    return [DeclareLaunchArgument(arg['name'],
+                                  default_value=arg.get('default'),
+                                  description=arg.get('description'),
+                                  choices=arg.get('choices')) \
+            for arg in args]
+
 def launch_setup(context):
     composable_nodes = [
         ComposableNode(
-            name=[LaunchConfiguration('device_name'), '_controller'],
+            name=[LaunchConfiguration('gripper_name'), '_controller'],
             package='aist_barrett',
             plugin='aist_barrett::BarrettHandController',
             parameters=[

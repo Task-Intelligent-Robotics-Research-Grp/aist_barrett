@@ -1,8 +1,8 @@
 /**:
-  $(var device_name)_controller:
+  $(var gripper_name)_controller:
     ros__parameters:
-      device_name:         $(var device_name)
-      mimic_outer_joints:  true
+      gripper_name:        $(var gripper_name)
+      mimic_outer_joints:  false
       # Coefficients for converting controller torque values to Newton-meters
       # (Obtained from pyHand 1.0 Manual)
       torque_coefficients: [-2.85, 37.46e-4, -1.708e-6, 2.754e-10]
@@ -10,10 +10,10 @@
   joint_state_to_array:
     ros__parameters:
       joints:
-        - $(var device_name)_left_finger_joint
-        - $(var device_name)_right_finger_joint
-        - $(var device_name)_middle_finger_joint
-        - $(var device_name)_spread_joint
+        - $(var gripper_name)_left_finger_joint
+        - $(var gripper_name)_right_finger_joint
+        - $(var gripper_name)_middle_finger_joint
+        - $(var gripper_name)_spread_joint
 
   joint_state_publisher_gui:
     ros__parameters:

@@ -2,45 +2,22 @@ from launch                            import LaunchDescription
 from launch.actions                    import (OpaqueFunction,
                                                IncludeLaunchDescription)
 from launch.substitutions              import (Command, FindExecutable,
-                                               LaunchConfiguration,
-                                               PathJoinSubstitution)
+                                               PathJoinSubstitution,
+                                               ThisLaunchFileDir)
 from launch_ros.substitutions          import FindPackageShare
 from launch_ros.actions                import Node
 from launch_ros.parameter_descriptions import ParameterValue
-from aist_bringup.launch_common        import declare_launch_arguments
-
-launch_arguments = [
-    {
-        'name':        'device_name',
-        'default':     'bhand',
-        'description': 'device name'
-    },
-    {
-        'name':        'container',
-        'default':     'bhand_container',
-        'description': 'name of the component container'
-    },
-    {
-        'name':        'log_level',
-        'default':     'info',
-        'description': 'debug log level',
-        'choices':     ['debug', 'info', 'warn', 'error', 'fatal']
-    },
-    {
-        'name':        'output',
-        'default':     'both',
-        'description': 'pipe node output',
-        'choices':     ['screen', 'log', 'both']
-    }
-]
 
 def launch_setup(context):
     robot_description = ParameterValue(
-                            Command([FindExecutable(name='xacro'),
-                                     ' ',
-                                     PathJoinSubstitution(
-                                         [FindPackageShare('aist_barrett'),
-                                          'urdf', 'barrett_hand.urdf'])]),
+                            Command([
+                                FindExecutable(name='xacro'), ' ',
+                                PathJoinSubstitution([
+                                    FindPackageShare('aist_barrett'), 'urdf',
+                                    'barrett_hand.urdf'
+                                ]),
+                                ' mimic_outer_joints:=false',
+                            ]),
                             value_type=str)
     return [
         Node(package='robot_state_publisher',
@@ -48,13 +25,14 @@ def launch_setup(context):
              parameters=[
                  {'robot_description': robot_description}
              ],
-             output=LaunchConfiguration('output')),
+             output='screen'),
         IncludeLaunchDescription(
-            PathJoinSubstitution([FindPackageShare('aist_barrett'), 'launch',
-                                  'launch.py'])),
-        IncludeLaunchDescription(
-            PathJoinSubstitution([FindPackageShare('aist_barrett'), 'launch',
-                                  'command_gui.launch.py'])),
+            PathJoinSubstitution([ThisLaunchFileDir(), 'launch.py'])),
+        Node(name=['test_client'],
+             package='aist_barrett',
+             executable=['test_client.py'],
+             prefix=['xterm -fn 7x14 -e'],
+             output='screen'),
         Node(name='rviz', package='rviz2', executable='rviz2',
              output='screen',
              arguments=[
@@ -65,5 +43,4 @@ def launch_setup(context):
     ]
 
 def generate_launch_description():
-    return LaunchDescription(declare_launch_arguments(launch_arguments) + \
-                             [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription([OpaqueFunction(function=launch_setup)])
