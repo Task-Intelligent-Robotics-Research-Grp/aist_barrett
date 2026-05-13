@@ -54,6 +54,14 @@ using namespace std::chrono_literals;
 
 namespace aist_barrett
 {
+template <class T> std::ostream&
+operator <<(std::ostream& out, const std::vector<T>& v)
+{
+    for (const auto& x : v)
+        out << ' ' << x;
+    return out;
+}
+
 template <class T> inline T     square(T x)     { return x*x; }
 
 /************************************************************************
@@ -218,10 +226,10 @@ class BarrettHandController : public rclcpp::Node
     bool        is_moving(const joint_state_t& joint_state) const
                 {
                     const auto& vel = joint_state.velocity;
-                    return (std::abs(vel[0]) < _vel_thresh &&
-                            std::abs(vel[1]) < _vel_thresh &&
-                            std::abs(vel[2]) < _vel_thresh &&
-                            std::abs(vel[3]) < _vel_thresh);
+                    return (std::abs(vel[0]) > _vel_thresh ||
+                            std::abs(vel[1]) > _vel_thresh ||
+                            std::abs(vel[2]) > _vel_thresh ||
+                            std::abs(vel[3]) > _vel_thresh);
                 }
     bool        stalled(const joint_state_t& joint_state) const
                 {
@@ -305,7 +313,7 @@ class BarrettHandController : public rclcpp::Node
     static constexpr double     _inner_finger_length     = 0.070;
     static constexpr double     _outer_finger_length     = 0.058;
     static constexpr double     _outer_finger_pos_mul    = 1.0 + 45.0/180.0;
-    static constexpr double     _outer_finger_pos_offset = 0.6109;  // 35 deg
+    static constexpr double     _outer_finger_pos_offset = 0.733;  // 42 deg
     static constexpr double     _max_radius = _inner_x
                                             + _inner_finger_length
                                             + _outer_finger_length
@@ -664,8 +672,7 @@ BarrettHandController::joint_state_cb()
     else if (result->reached_goal || result->stalled)
     {
         RCLCPP_INFO_STREAM(get_logger(),
-                           "GripperCommand goal SUCCEEDED[effort="
-                           << result->effort
+                           "goal SUCCEEDED[effort=" << result->effort
                            << ", reached_goal=" << std::boolalpha
                            << result->reached_goal
                            << ", stalled=" << std::boolalpha << result->stalled
@@ -698,7 +705,7 @@ BarrettHandController::goal_cb(const goal_uuid_t&,
 BarrettHandController::cancel_response_t
 BarrettHandController::cancel_cb(goal_handle_p<gripper_command_t>)
 {
-    RCLCPP_DEBUG_STREAM(get_logger(), "accepted request for cancelling goal");
+    RCLCPP_DEBUG_STREAM(get_logger(), "request for cancelling goal ACCEPTED");
     return cancel_response_t::ACCEPT;
 }
 

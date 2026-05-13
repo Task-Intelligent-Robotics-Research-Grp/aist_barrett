@@ -81,7 +81,7 @@ class BarrettHandClient(Node):
                 self._gripper.release(timeout_sec=0.0)
             elif is_float(key):
                 self._gripper.move(float(key),
-                                   spread=self._gripper.paremeters['spread'],
+                                   spread=self._gripper.parameters['spread'],
                                    timeout_sec=None)
             elif key == 'c':
                 self._gripper.cancel_goal()
@@ -91,23 +91,20 @@ class BarrettHandClient(Node):
                 print(result)
             elif key == 's':
                 spread = min(max(0.0, float(input('  spread: '))), 180.0)
-                self._gripper.properties['spread'] = radians(spread)
+                self._gripper.parameters['spread'] = radians(spread)
                 print('spread set to %f' % spread)
             elif key == 'e':
                 effort = min(max(0.0, float(input('  effort: '))), 180.0)
-                self._gripper.properties['max_effort'] = effort
+                self._gripper.parameters['max_effort'] = effort
                 print('max_effort set to %f' % effort)
             elif key == 'm':
                 mode = int(input('  mode(0: PINCH, 1: ENCOMPASS, 2: SCISSOR, 3: GRIP): '))
-                self._gripper.properties['mode'] = mode
+                self._gripper.parameters['mode'] = mode
                 print('mode set to %f' % mode)
             elif key == 'v':
                 velocity = float(input('  velocity: '))
-                success  = self._gripper.set_velocity(velocity)
-                if success:
-                    print('velocity successfully set to %f' % velocity)
-                else:
-                    print('failed to set velocity')
+                self._gripper.set_velocity(velocity)
+                print('velocity set to %f' % velocity)
             elif key=='q':
                 break
             else:
