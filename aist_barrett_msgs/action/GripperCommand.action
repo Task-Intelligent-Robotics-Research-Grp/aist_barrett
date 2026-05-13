@@ -8,10 +8,12 @@ float64 spread        # desired spread angle
 float64 max_effort    # maximum effort to be applied
 uint8   mode          # PINCH/ENCOMPASS/SCISSOR/GRIP
 ---
-float64 effort        # The current effort exerted (in Newtons)
+float64 gap           # actual gap
+float64 effort        # actual effort exerted (in Newtons)
 bool    stalled       # True iff max effort exerted and not moving
 bool    reached_goal  # True iff reached the commanded position
 ---
-float64 effort        # The current effort exerted (in Newtons)
+float64 gap           # actual gap
+float64 effort        # actual effort exerted (in Newtons)
 bool    stalled       # True iff max effort exerted and not moving
 bool    reached_goal  # True iff reached the commanded position

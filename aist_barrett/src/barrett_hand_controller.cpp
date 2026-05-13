@@ -193,6 +193,7 @@ class BarrettHandController : public rclcpp::Node
                 }
     void        set_result(const result_p<gripper_command_t>& result) const
                 {
+                    result->gap          = actual_gap(_joint_state);
                     result->effort       = actual_eff(_joint_state);
                     result->stalled      = stalled(_joint_state);
                     result->reached_goal = reached_goal(_joint_state);
@@ -215,6 +216,27 @@ class BarrettHandController : public rclcpp::Node
     void        send_stop_command() const
                 {
                     _hand->idle();
+                }
+
+    double      actual_gap(const joint_state_t& joint_state) const
+                {
+                    const auto& pos = joint_state.position;
+                    switch (_current_mode)
+                    {
+                      case gripper_command_t::Goal::PINCH:
+                        return 2.0/3.0*(radius_from_pos(pos[0]) +
+                                        radius_from_pos(pos[1]) +
+                                        radius_from_pos(pos[2]));
+                      case gripper_command_t::Goal::SCISSOR:
+                        return radius_from_pos(pos[0])
+                             + radius_from_pos(pos[1]) + 2.0*_half_tread;
+                      default:
+                        break;
+                    }
+
+                    return 3.0*(height_from_pos(pos[0]) +
+                                height_from_pos(pos[1]) +
+                                height_from_pos(pos[2]));
                 }
 
     double      actual_eff(const joint_state_t& joint_state) const
@@ -659,7 +681,13 @@ BarrettHandController::joint_state_cb()
   // Check if the current goal is requested to be cancelled.
     if (_gripper_command_goal_handle->is_canceling())
     {
-        RCLCPP_WARN_STREAM(get_logger(), "goal CANCELED");
+        RCLCPP_WARN_STREAM(get_logger(),
+                           "goal CANCELED[gap=" << result->gap
+                           << ", effort=" << result->effort
+                           << ", reached_goal=" << std::boolalpha
+                           << result->reached_goal
+                           << ", stalled=" << std::boolalpha << result->stalled
+                           << ']');
         send_stop_command();
         _gripper_command_goal_handle->canceled(std::move(result));
         _gripper_command_goal_handle = nullptr;
@@ -672,7 +700,8 @@ BarrettHandController::joint_state_cb()
     else if (result->reached_goal || result->stalled)
     {
         RCLCPP_INFO_STREAM(get_logger(),
-                           "goal SUCCEEDED[effort=" << result->effort
+                           "goal SUCCEEDED[gap=" << result->gap
+                           << ", effort=" << result->effort
                            << ", reached_goal=" << std::boolalpha
                            << result->reached_goal
                            << ", stalled=" << std::boolalpha << result->stalled
@@ -684,6 +713,7 @@ BarrettHandController::joint_state_cb()
 
   // Publish speed and filtered current as a feedback.
     auto	feedback = std::make_unique<gripper_command_t::Feedback>();
+    feedback->gap	   = result->gap;
     feedback->effort	   = result->effort;
     feedback->stalled	   = result->stalled;
     feedback->reached_goal = result->reached_goal;
