@@ -76,6 +76,10 @@ class BarrettHand(SimpleActionClient):
         return self._name
 
     @property
+    def type(self):
+        return 'three_finger'
+
+    @property
     def base_link(self):
         return self._name + '_base_link'
 
