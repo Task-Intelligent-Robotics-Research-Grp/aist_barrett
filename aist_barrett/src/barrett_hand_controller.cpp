@@ -152,31 +152,37 @@ class BarrettHandController : public rclcpp::Node
                 cancel_cb(const goal_handle_p<gripper_command_t>)       ;
     array4d     goal_pos(const goal_cp<gripper_command_t>& goal) const
                 {
-                    array4d     pos;
+                    constexpr double max_inner_joint_angle = 140.0/180.0*M_PI;
+                    array4d          pos;
 
                     switch (goal->mode)
                     {
                       default:
                       case gripper_command_t::Goal::PINCH:
-                        pos[0] = pos_from_radius(0.5*goal->gap);
+                        pos[0] = std::clamp(pos_from_radius(0.5*goal->gap),
+                                            0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
                         pos[3] = std::clamp(goal->spread, 0.0, M_PI);
                         break;
                       case gripper_command_t::Goal::ENCOMPASS:
-                        pos[0] = pos_from_height(goal->gap);
+                        pos[0] = std::clamp(pos_from_height(goal->gap),
+                                            0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
                         pos[3] = 0.0;
                         break;
                       case gripper_command_t::Goal::SCISSOR:
-                        pos[0] = pos_from_radius(0.5*goal->gap - _half_tread);
+                        pos[0] =std::clamp(pos_from_radius(0.5*goal->gap
+                                                           - _half_tread),
+                                           0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = 0.0;
                         pos[3] = M_PI/2;
                         break;
                       case gripper_command_t::Goal::GRIP:
-                        pos[0] = pos_from_height(goal->gap);
+                        pos[0] = std::clamp(pos_from_height(goal->gap),
+                                            0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
                         pos[3] = M_PI;
@@ -234,9 +240,9 @@ class BarrettHandController : public rclcpp::Node
                         break;
                     }
 
-                    return 3.0*(height_from_pos(pos[0]) +
-                                height_from_pos(pos[1]) +
-                                height_from_pos(pos[2]));
+                    return (height_from_pos(pos[0]) +
+                            height_from_pos(pos[1]) +
+                            height_from_pos(pos[2]))/3.0;
                 }
 
     double      actual_eff(const joint_state_t& joint_state) const
@@ -793,13 +799,14 @@ BarrettHandController::pos_from_radius(double r)
     if (r < -_half_tread)
         r = -_half_tread;
 
-    double      p = M_PI/2;   // Set initial position to 90 deg.
-    double      l = 1.0e-4;
+    double      p = M_PI/2;     // Set initial position to 90 deg.
+    double      l = 1.0e-4;     // Levenerq-Maruquardt damping factor
     double      e = radius_from_pos(p) - r;
     for (size_t i = 100; i--; )
     {
-        const auto s = _inner_finger_length*std::sin(p)
-                     + _outer_finger_length*std::sin(outer_finger_pos(p))
+      // Negation of the first derivative of radius_from_pos(p)
+        const auto s = _inner_finger_length * std::sin(p)
+                     + _outer_finger_length * std::sin(outer_finger_pos(p))
                      * _outer_finger_pos_mul;
         for (;;)
         {
@@ -832,11 +839,12 @@ BarrettHandController::pos_from_height(double h)
     if (h >= _max_height)
         return 0.0;
 
-    double      p = M_PI/2;   // Set initial position to 90 deg.
-    double      l = 1.0e-4;
+    double      p = M_PI/2;     // Set initial position to 90 deg.
+    double      l = 1.0e-4;     // Levenerq-Maruquardt damping factor
     double      e = height_from_pos(p) - h;
     for (size_t i = 100; i--; )
     {
+      // First derivative of height_from_pos(p)
         const auto s = _inner_finger_length * std::cos(p)
                      + _outer_finger_length * std::cos(outer_finger_pos(p))
                      * _outer_finger_pos_mul;
