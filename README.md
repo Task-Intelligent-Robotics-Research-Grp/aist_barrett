@@ -1,4 +1,11 @@
-aist_barrett and aist_barrett_msgs
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Task-Intellignet-Robotics-Research-Grp/aist_barrett)
+![GitHub](https://img.shields.io/github/license/Task-Intellignet-Robotics-Research-Grp/aist_barrett)
+
+| ROS 2 Distribution | Jazzy                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build Status       | [![jazzy-build](https://github.com/Task-Intelligent-Robotics-Research-Grp/aist_barrett/actions/workflows/jazzy-build.yaml/badge.svg)](https://github.com/Task-Intelligent-Robotics-Research-Grp/aist_barrett/actions/workflows/jazzy-build.yaml) |
+
+aist_barrett
 ==================================================
 
 ## 概要
@@ -28,5 +35,7 @@ aist_barrett and aist_barrett_msgs
  cd ~/ros2_ws
  colcon build
  ```
- 以上により，本ソフトウェアに含まれる[aist_barrett](./aist_barrett/)と[aist_barrett_msgs](./aist_barrett_msgs/)がインストールされます．使い方については，それぞれの`README`を参照してください．
+ 以上により，本ソフトウェアに含まれる`aist_barrett`と`aist_barrett_msgs`がインストールされます．使い方については，それぞれ以下のリンクを参照してください．
+- [aist_barrett](https://task-intelligent-robotics-research-grp.github.io/aist_barrett/md_aist__barrett_2README.html): Usage of controllers and drivers for `Barrett` grippers. API document of the controller clients is also included.
+- [aist_barrett_msgs](https://task-intelligent-robotics-research-grp.github.io/aist_barrett/aist_barrett_msgs/index.html): Definitions of ROS message/service/action used by controllers and drivers included in `aist_barrett`.
  

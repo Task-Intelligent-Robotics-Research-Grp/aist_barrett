@@ -1,0 +1,95 @@
+name: ROS build workflow
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      ros_distro:
+        required: true
+        type: string
+
+jobs:
+  ros_build:
+    runs-on: ${{ inputs.os }}
+    env:
+      WS:  /home/runner/work/ros2_ws
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: aist_barrett
+
+    - name: Setup ROS
+      uses: ros-tooling/setup-ros@v0.7
+      with:
+        required-ros-distributions: ${{ inputs.ros_distro }}
+
+    - name: Apt update and upgrade
+      run: |
+        sudo apt update
+        sudo apt upgrade -y
+
+    - name: Install dependencies
+      run: |
+        sudo apt install libncurses-dev libgsl-dev libconfig++-dev nlohmann-json3-dev python3-rosdoc2
+
+    - name: Checkout dependencies
+      run: |
+        vcs import . --input=aist_barrett/dependencies.repos
+
+    - name: Patch libconfig
+      run: |
+        cd /usr/include
+        sudo patch < ${GITHUB_WORKSPACE}/libconfig/libconfig.patch
+
+    - name: Build
+      run: |
+        mkdir libconfig/build
+        cd ./libconfig/build
+        cmake ..
+        make
+        sudo make install
+
+    - name: Init workspace
+      run: |
+        mkdir ${WS}
+        ln -s ${GITHUB_WORKSPACE} ${WS}/src
+
+    - name: Pre build
+      run: |
+        source /opt/ros/${{ inputs.ros_distro }}/setup.bash
+        cd ${WS}/src
+        rosdep update
+        rosdep install -iy --from-paths ./
+
+    - name: Build
+      run: |
+        source /opt/ros/${{ inputs.ros_distro }}/setup.bash
+        cd ${WS}
+        colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+    - name: Install doxyfilter_python
+      run: |
+        sudo install ./doxyfilter_python/doxyfilter_python.py /usr/local/bin
+
+    - name: Build documents of aist_barrett
+      run: |
+        cd ${WS}/src/aist_barrett
+        doxygen
+
+    - name: Build documents of aist_barrett_msgs
+      run: |
+        cd ${WS}/src/aist_barrett/docs
+        rosdoc2 build --package-path ../aist_barrett_msgs
+        mv ./docs_output/aist_barrett_msgs ./html
+
+    - name: Upload artifact of aist_barrett
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: ./aist_barrett/docs/html
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v5

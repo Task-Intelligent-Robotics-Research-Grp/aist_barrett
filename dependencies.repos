@@ -1,0 +1,17 @@
+repositories:
+  ddynamic_reconfigure2:
+    type: git
+    url: https://github.com/Automation-Research-Team/ddynamic_reconfigure2
+    version: develop
+  task_wrappers:
+    type: git
+    url: https://github.com/Task-Intelligent-Robotics-Research-Grp/task_wrappers
+    version: develop
+  doxyfilter_python:
+    type: git
+    url: https://github.com/Task-Intelligent-Robotics-Research-Grp/doxyfilter_python
+    version: devel-aist
+  libbarrett:
+    type: git
+    url: https://github.com/Task-Intelligent-Robotics-Research-Grp/libbarrett
+    version: devel-aist
