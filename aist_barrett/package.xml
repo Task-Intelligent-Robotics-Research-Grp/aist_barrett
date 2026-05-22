@@ -19,7 +19,7 @@
   <depend>rclcpp_action</depend>
   <depend>rclpy</depend>
   <depend>ddynamic_reconfigure2</depend>
-  <depend>srv_and_action_wrappers</depend>
+  <depend>task_wrappers</depend>
   <depend>control_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
