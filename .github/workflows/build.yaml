@@ -42,7 +42,7 @@ jobs:
     - name: Patch libconfig
       run: |
         cd /usr/include
-        sudo patch < ${GITHUB_WORKSPACE}/libconfig/libconfig.patch
+        sudo patch < ${{github.workspace}}/libconfig/libconfig.patch
 
     - name: Build
       run: |
