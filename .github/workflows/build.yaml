@@ -44,10 +44,10 @@ jobs:
         cd /usr/include
         sudo patch < ${{github.workspace}}/libbarrett/libconfig.patch
 
-    - name: Build
+    - name: Build libbarrett
       run: |
-        mkdir libconfig/build
-        cd ./libconfig/build
+        mkdir libbarrett/build
+        cd ./libbarrett/build
         cmake ..
         make
         sudo make install
