@@ -174,7 +174,7 @@ class BarrettHand(SimpleActionClient):
           max_effort: Desired maximum effort to be applied. The value of
             parameter 'max_effort' is used, if `None`.
           mode: Desired grasping mode. Possible values are
-            'GripperCommand.Goal.[PINCH|ENCOMPASS|SCISSOR|GRIP]'.
+            `GripperCommand.Goal.[PINCH|ENCOMPASS|SCISSOR|GRIP]`.
             The value of parameter 'mode' is used, if `None`.
           timeout_sec: Timeout time waiting for the gripper to complete
             movement. Seconds to wait, if positive. Wait forever, if `None`.
