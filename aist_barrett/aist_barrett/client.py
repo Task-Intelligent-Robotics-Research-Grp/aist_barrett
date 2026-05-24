@@ -164,7 +164,7 @@ class BarrettHand(SimpleActionClient):
 
     def move(self, gap: float, *,
              spread: Optional[float]=None, max_effort: Optional[float]=None,
-             mode: int=None, timeout_sec: Optional[float]=None):
+             mode: Optional[int]=None, timeout_sec: Optional[float]=None):
         """ Move gripper to the desired position.
 
         Args:
@@ -173,8 +173,9 @@ class BarrettHand(SimpleActionClient):
             if `None`.
           max_effort: Desired maximum effort to be applied. The value of
             parameter 'max_effort' is used, if `None`.
-          mode: Desired grasping mode. The value of parameter 'mode' is used,
-            if `None`.
+          mode: Desired grasping mode. Possible values are
+            'GripperCommand.Goal.[PINCH|ENCOMPASS|SCISSOR|GRIP]'.
+            The value of parameter 'mode' is used, if `None`.
           timeout_sec: Timeout time waiting for the gripper to complete
             movement. Seconds to wait, if positive. Wait forever, if `None`.
             Return immediately, if zero or negative.
