@@ -3,7 +3,7 @@
 # Set the project name
 PROJECT_NAME           = aist_barrett
 
-FILTER_PATTERNS        = *.py=/usr/local/bin/doxyfilter_python.py
+FILTER_PATTERNS        = *.py="doxypypy -a -c"
 
 OUTPUT_DIRECTORY       = docs
 

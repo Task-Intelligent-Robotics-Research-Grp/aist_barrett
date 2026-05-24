@@ -7,10 +7,6 @@ repositories:
     type: git
     url: https://github.com/Task-Intelligent-Robotics-Research-Grp/task_wrappers
     version: develop
-  doxyfilter_python:
-    type: git
-    url: https://github.com/Task-Intelligent-Robotics-Research-Grp/doxyfilter_python
-    version: devel-aist
   libbarrett:
     type: git
     url: https://github.com/Task-Intelligent-Robotics-Research-Grp/libbarrett

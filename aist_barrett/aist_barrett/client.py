@@ -47,7 +47,7 @@ from task_wrappers.action_client  import SimpleActionClient
 #  class BarrettHand                                                 *
 #*********************************************************************
 class BarrettHand(SimpleActionClient):
-    def __init__(self, node, name='bhand'):
+    def __init__(self, node: Node, name: str='bhand'):
         self._name = name
         self._cbg  = MutuallyExclusiveCallbackGroup()
 
@@ -72,52 +72,117 @@ class BarrettHand(SimpleActionClient):
                             'mode':        GripperCommand.Goal.PINCH}
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """ Name of the gripper.
+        """
         return self._name
 
     @property
-    def type(self):
+    def type(self) -> str:
+        """ Name of the gripper's type.
+        """
         return 'three_finger'
 
     @property
-    def base_link(self):
+    def base_link(self) -> str:
+        """ Name of the gripper's base link.
+        """
         return self._name + '_base_link'
 
     @property
-    def tip_link(self):
+    def tip_link(self) -> str:
+        """ Name of the gripper's tip link.
+        """
         return self._name + '_tip_link'
 
     @property
-    def parameters(self):
-        """ Return a dictionary of gripper parameters.
-        :return: Dictionary of gripper parameters with string keys.
+    def parameters(self) -> dict:
+        """ Dictionary of gripper parameters.
         """
         return self._parameters
 
-    def set_torque_mode(self, enable):
+    def set_torque_mode(self, enable: bool):
+        """ Set finger velocity value to the gripper.
+
+        Args:
+          enable: `True` if torque mode turned on. `False` otherwise.
+        """
         return self._set_velocity.call(SetBool.Request(data=enable))
 
-    def set_velocity(self, velocity, *, spread=False):
+    def set_velocity(self, velocity: float, *, spread: bool=False):
+        """ Set velocity value to the gripper.
+
+        Args:
+          velocity: Velocity of the gripper.
+        """
         return self._set_velocity.call(SetVelocity.Request(velocity=velocity,
                                                            spread=spread))
 
-    def pregrasp(self):
+    def pregrasp(self) -> None:
+        """ Move to release position and return immediatelty.
+        """
         self.release(timeout_sec=0.0)
 
-    def grasp(self, *, timeout_sec=None):
+    def grasp(self, *, timeout_sec: Optional[float]=None):
+        """ Grasp an object with the gripper.
+        Desired spread, applied effort and mode are specified by parameters
+        with 'spread', 'max_effort' and 'mode' keys, respectively.
+
+        Args:
+          timeout_sec: Timeout time waiting for the gripper to complete
+            grasping. Seconds to wait, if positive. Wait forever, if `None`.
+            Return immediately, if zero or negative.
+
+        Returns:
+          A tuple of the goal status and the movement result of
+          `GripperCommand.Result` type.
+        """
         return self.move(0.0, spread=None, max_effort=None, mode=None,
                          timeout_sec=timeout_sec)
 
-    def postgrasp(self):
+    def postgrasp(self) -> None:
+        """ Move to grasp position and return immediatelty.
+        """
         self.grasp(timeout_sec=0.0)
 
-    def release(self, *, timeout_sec=None):
+    def release(self, *, timeout_sec: Optional[float]=None):
+        """ Release an object grasped by the gripper.
+        No effort is applied. Current spread and mode are kept unchanged.
+
+        Args:
+          timeout_sec: Timeout time waiting for the gripper to complete
+            releasing. Seconds to wait, if positive. Wait forever, if `None`.
+            Return immediately, if zero or negative.
+
+        Returns:
+          A tuple of the goal status and the movement result of
+          `GripperCommand.Result` type.
+        """
         return self.move(self.parameters['release_gap'],
                          spread=None, max_effort=0.0,
                          mode=None, timeout_sec=timeout_sec)
 
-    def move(self, gap, *,
-             spread=None, max_effort=None, mode=None, timeout_sec=None):
+    def move(self, gap: float, *,
+             spread: Optional[float]=None, max_effort: Optional[float]=None,
+             mode: int=None, timeout_sec: Optional[float]=None):
+        """ Move gripper to the desired position.
+
+        Args:
+          gap: Desired gap between the fingers.
+          spread: Desired spread. The value of parameter 'spread' is used,
+            if `None`.
+          max_effort: Desired maximum effort to be applied. The value of
+            parameter 'max_effort' is used, if `None`.
+          mode: Desired grasping mode. The value of parameter 'mode' is used,
+            if `None`.
+          timeout_sec: Timeout time waiting for the gripper to complete
+            movement. Seconds to wait, if positive. Wait forever, if `None`.
+            Return immediately, if zero or negative.
+
+        Returns:
+            A tuple of the goal status and the movement result of
+            `control_msgs.action.GripperCommand.Result` type
+        """
         if not spread:
             spread = self.parameters['spread']
         if not max_effort:
