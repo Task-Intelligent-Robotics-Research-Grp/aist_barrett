@@ -181,8 +181,8 @@ class BarrettHand(SimpleActionClient):
             Return immediately, if zero or negative.
 
         Returns:
-            A tuple of the goal status and the movement result of
-            `control_msgs.action.GripperCommand.Result` type
+          A tuple of the goal status and the movement result of
+          `GripperCommand.Result` type
         """
         if not spread:
             spread = self.parameters['spread']
