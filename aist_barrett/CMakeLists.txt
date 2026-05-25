@@ -59,4 +59,4 @@ ament_environment_hooks(
   "${CMAKE_CURRENT_SOURCE_DIR}/hooks/${PROJECT_NAME}.sh.in"
 )
 
-ament_auto_package(INSTALL_TO_SHARE launch meshes urdf)
+ament_auto_package(INSTALL_TO_SHARE launch meshes urdf config)

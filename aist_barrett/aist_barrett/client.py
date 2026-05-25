@@ -32,8 +32,6 @@
 #  Author: Toshio Ueshiba (t.ueshiba@aist.go.jp)
 #
 import rclpy, threading
-from rclpy.duration               import Duration
-from rclpy.parameter_client       import AsyncParameterClient
 from rclpy.callback_groups        import MutuallyExclusiveCallbackGroup
 from action_msgs.msg              import GoalStatus
 from std_srvs.srv                 import SetBool, Trigger
@@ -42,6 +40,9 @@ from aist_barrett_msgs.srv        import SetVelocity
 from aist_barrett_msgs.msg        import TactileStates
 from task_wrappers.service_client import ServiceClient
 from task_wrappers.action_client  import SimpleActionClient
+
+from typing                       import Optional
+from rclpy.node                   import Node
 
 #*********************************************************************
 #  class BarrettHand                                                 *
