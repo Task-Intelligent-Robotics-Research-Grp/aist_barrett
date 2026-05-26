@@ -392,7 +392,7 @@ BarrettHandController::BarrettHandController(
                            _tactile_states_cbg) : nullptr),
 
      _command_sub(create_subscription<float64_multi_array_t>(
-                      "~/commands", 1,
+                      "~/position_command", 1,
                       std::bind(&BarrettHandController::command_cb,
                                 this, std::placeholders::_1))),
 
@@ -422,7 +422,7 @@ BarrettHandController::BarrettHandController(
 
      _goal_pos(),
      _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
-                              this, "~/gripper_cmd",
+                              this, "~/command",
                               std::bind(&BarrettHandController::goal_cb, this,
                                         std::placeholders::_1,
                                         std::placeholders::_2),

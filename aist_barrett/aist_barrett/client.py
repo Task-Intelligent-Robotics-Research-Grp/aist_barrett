@@ -54,7 +54,7 @@ class BarrettHand(SimpleActionClient):
 
         # Create action client for gripper command.
         controller_ns = name + '_controller'
-        super().__init__(node, GripperCommand, controller_ns + '/gripper_cmd',
+        super().__init__(node, GripperCommand, controller_ns + '/command',
                          callback_group=self._cbg)
 
         # Create service client for setting torque mode.
