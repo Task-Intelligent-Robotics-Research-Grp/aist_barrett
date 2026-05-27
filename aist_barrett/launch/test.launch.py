@@ -31,7 +31,7 @@ def launch_setup(context):
         Node(name=['test_client'],
              package='aist_barrett',
              executable=['test_client.py'],
-             prefix=['gnome-terminal --geometry=80x60 --'],
+             prefix=['gnome-terminal --tab --'],
              output='screen'),
         Node(name='rviz', package='rviz2', executable='rviz2',
              output='screen',
