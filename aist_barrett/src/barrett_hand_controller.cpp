@@ -45,10 +45,10 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/set_bool.hpp>
+#include <control_msgs/action/gripper_command.hpp>
 #include <aist_barrett_msgs/msg/tactile_states.hpp>
 #include <aist_barrett_msgs/srv/set_velocity.hpp>
 #include <aist_barrett_msgs/srv/open_or_close.hpp>
-#include <aist_barrett_msgs/action/gripper_command.hpp>
 
 using namespace std::chrono_literals;
 
@@ -93,9 +93,10 @@ class BarrettHandController : public rclcpp::Node
     using set_bool_t            = std_srvs::srv::SetBool;
     using set_velocity_t        = aist_barrett_msgs::srv::SetVelocity;
     using open_or_close_t       = aist_barrett_msgs::srv::OpenOrClose;
-    using gripper_command_t     = aist_barrett_msgs::action::GripperCommand;
+    using gripper_command_t     = control_msgs::action::GripperCommand;
     using vector_t              = std::vector<double>;
     using array4d               = std::array<double, 4>;
+    using ddr_t                 = ddynamic_reconfigure2::DDynamicReconfigure<>;
 
     template <class MSG>
     using msg_p         = typename MSG::UniquePtr;
@@ -121,6 +122,8 @@ class BarrettHandController : public rclcpp::Node
     using res_p         = typename SRV::Response::SharedPtr;
     template <class SRV>
     using clnt_p        = typename rclcpp::Client<SRV>::SharedPtr;
+
+    enum Mode   { PINCH = 0, ENCOMPASS = 1, SCISSOR = 2, GRIP = 3 };
 
   public:
     BarrettHandController(const rclcpp::NodeOptions& options)           ;
@@ -155,24 +158,24 @@ class BarrettHandController : public rclcpp::Node
                     constexpr double max_inner_joint_angle = 140.0/180.0*M_PI;
                     array4d          pos;
 
-                    switch (goal->mode)
+                    switch (_mode)
                     {
                       default:
-                      case gripper_command_t::Goal::PINCH:
+                      case PINCH:
                         pos[0] = std::clamp(pos_from_radius(0.5*goal->gap),
                                             0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
                         pos[3] = std::clamp(goal->spread, 0.0, M_PI);
                         break;
-                      case gripper_command_t::Goal::ENCOMPASS:
+                      case ENCOMPASS:
                         pos[0] = std::clamp(pos_from_height(goal->gap),
                                             0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
                         pos[3] = 0.0;
                         break;
-                      case gripper_command_t::Goal::SCISSOR:
+                      case SCISSOR:
                         pos[0] =std::clamp(pos_from_radius(0.5*goal->gap
                                                            - _half_tread),
                                            0.0, max_inner_joint_angle);
@@ -180,7 +183,7 @@ class BarrettHandController : public rclcpp::Node
                         pos[2] = 0.0;
                         pos[3] = M_PI/2;
                         break;
-                      case gripper_command_t::Goal::GRIP:
+                      case GRIP:
                         pos[0] = std::clamp(pos_from_height(goal->gap),
                                             0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
@@ -305,6 +308,11 @@ class BarrettHandController : public rclcpp::Node
     bool                                _torque_mode;
     const vector_t                      _torque_coefficients;
 
+  // Variable parameters
+    double                              _velocity;
+    int                                 _mode;
+    ddr_t                               _ddr;
+
   // Joint state stuffs
     joint_state_t                       _joint_state;
     const pub_p<joint_state_t>          _joint_state_pub;
@@ -365,6 +373,10 @@ BarrettHandController::BarrettHandController(
                             // default values obtained from pyHand 1.0 Manual
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
+
+     _velocity(0.0),
+     _mode(PINCH),
+     _ddr(reclcpp::Node::SharedPtr(this)),
 
      _joint_state(),
      _joint_state_pub(create_publisher<joint_state_t>("/joint_states", 1)),
@@ -439,6 +451,7 @@ BarrettHandController::BarrettHandController(
                             this, "stall_timeout", 1.0))),
      _current_mode(gripper_command_t::Goal::PINCH)
 {
+  // Barrett Hand
     barrett::installExceptionHandler();
     if (!_hand)
     {
@@ -454,6 +467,17 @@ BarrettHandController::BarrettHandController(
     else
         _hand->setPositionMode(barrett::Hand::WHOLE_HAND);
 
+  // Parameters
+    _ddr.registerVariable<double>("velocity", &_velocity, "finger velocity",
+                                  0.0, 1.0);
+    _ddr.registerEnumVariable<int>("mode", BASIC,
+                                   std::bind(&BarrettHandController::set_mode,
+                                             this, std::placeholders::_1),
+                                   "grasp mode",
+                                   {{"Pinch", PINCH}, {"Encompass", ENCOMPASS},
+                                    {"Scissor", SCISSOR}, {"GRIP",  GRIP}});
+
+  // Joint state
     const auto
         device_name = ddynamic_reconfigure2::declare_read_only_parameter(
                           this, "device_name", "bhand");
