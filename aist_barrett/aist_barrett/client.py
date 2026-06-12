@@ -35,11 +35,13 @@ import rclpy, threading
 from rclpy.callback_groups        import MutuallyExclusiveCallbackGroup
 from action_msgs.msg              import GoalStatus
 from std_srvs.srv                 import SetBool, Trigger
-from aist_barrett_msgs.action     import GripperCommand
+from control_msgs.action          import GripperCommand
+from control_msgs.msg             import GripperCommand as GripperCommandMsg
 from aist_barrett_msgs.srv        import SetVelocity
 from aist_barrett_msgs.msg        import TactileStates
 from task_wrappers.service_client import ServiceClient
 from task_wrappers.action_client  import SimpleActionClient
+from ddynamic_reconfigure2.client import ParameterClient
 
 from typing                       import Optional
 from rclpy.node                   import Node
@@ -48,6 +50,8 @@ from rclpy.node                   import Node
 #  class BarrettHand                                                 *
 #*********************************************************************
 class BarrettHand(SimpleActionClient):
+    _RemoteParams = ('velocity', 'spread', 'mode')
+
     def __init__(self, node: Node, name: str='bhand'):
         self._name = name
         self._cbg  = MutuallyExclusiveCallbackGroup()
@@ -56,6 +60,11 @@ class BarrettHand(SimpleActionClient):
         controller_ns = name + '_controller'
         super().__init__(node, GripperCommand, controller_ns + '/command',
                          callback_group=self._cbg)
+
+        # Create parameter client for setting/getting controller parameters.
+        self._param_clnt   = ParameterClient(node, controller_ns)
+        self._local_params = {'release_position': 0.32,
+                              'max_effort':       10.0}
 
         # Create service client for setting torque mode.
         self._set_torque_mode \
@@ -66,11 +75,6 @@ class BarrettHand(SimpleActionClient):
         self._set_velocity \
             = ServiceClient(node, SetVelocity, controller_ns + '/set_velocity',
                             callback_group=self._cbg)
-
-        self._parameters = {'release_gap': 0.32,
-                            'spread':      0.0,
-                            'max_effort':  10.0,
-                            'mode':        GripperCommand.Goal.PINCH}
 
     @property
     def name(self) -> str:
@@ -100,7 +104,33 @@ class BarrettHand(SimpleActionClient):
     def parameters(self) -> dict:
         """ Dictionary of gripper parameters.
         """
-        return self._parameters
+        timeout_sec = 10.0
+        values = self._param_clnt \
+                     .get_parameters_sync(BarrettHand._RemoteParams,
+                                          timeout_sec=timeout_sec)
+        remote_params = dict(zip(BarrettHand._RemoteParams, values))
+        return self._local_params | remote_params
+
+    def set_parameters(self, params: dict):
+        """ Set gripper parameters.
+
+        Args:
+          params: Dictionary of gripper parameters. Effective keys are
+          - 'max_effort': Maximum effort in Newton applied when grasping.
+          - 'release_position': Gap between fingers in meters when releasing.
+          - 'velocity': Finger velocity
+          - 'mode': Grasping mode(0: PINCH, 1: ENCOMPASS, 2: SCISSOR, 3: GRIP).
+        """
+        self._local_params |= dict(filter(lambda item: item[0]
+                                          not in BarrettHand._RemoteParams,
+                                          params.items()))
+
+        remote_params = dict(filter(lambda item: item[0]
+                                    in BarrettHand._RemoteParams,
+                                    params.items()))
+        timeout_sec = 1.0
+        self._param_clnt.set_parameters_sync(remote_params,
+                                             timeout_sec=timeout_sec)
 
     def set_torque_mode(self, enable: bool):
         """ Set finger velocity value to the gripper.
@@ -138,8 +168,7 @@ class BarrettHand(SimpleActionClient):
           A tuple of the goal status and the movement result of
           `GripperCommand.Result` type.
         """
-        return self.move(0.0, spread=None, max_effort=None, mode=None,
-                         timeout_sec=timeout_sec)
+        return self.move(0.0, max_effort=None, timeout_sec=timeout_sec)
 
     def postgrasp(self) -> None:
         """ Move to grasp position and return immediatelty.
@@ -159,24 +188,17 @@ class BarrettHand(SimpleActionClient):
           A tuple of the goal status and the movement result of
           `GripperCommand.Result` type.
         """
-        return self.move(self.parameters['release_gap'],
-                         spread=None, max_effort=0.0,
-                         mode=None, timeout_sec=timeout_sec)
+        return self.move(self.parameters['release_position'],
+                         max_effort=0.0, timeout_sec=timeout_sec)
 
-    def move(self, gap: float, *,
-             spread: Optional[float]=None, max_effort: Optional[float]=None,
-             mode: Optional[int]=None, timeout_sec: Optional[float]=None):
+    def move(self, gap: float, *, max_effort: Optional[float]=None,
+             timeout_sec: Optional[float]=None):
         """ Move gripper to the desired position.
 
         Args:
           gap: Desired gap between the fingers.
-          spread: Desired spread. The value of parameter 'spread' is used,
-            if `None`.
           max_effort: Desired maximum effort to be applied. The value of
             parameter 'max_effort' is used, if `None`.
-          mode: Desired grasping mode. Possible values are
-            `GripperCommand.Goal.[PINCH|ENCOMPASS|SCISSOR|GRIP]`.
-            The value of parameter 'mode' is used, if `None`.
           timeout_sec: Timeout time waiting for the gripper to complete
             movement. Seconds to wait, if positive. Wait forever, if `None`.
             Return immediately, if zero or negative.
@@ -185,13 +207,9 @@ class BarrettHand(SimpleActionClient):
           A tuple of the goal status and the movement result of
           `GripperCommand.Result` type
         """
-        if not spread:
-            spread = self.parameters['spread']
         if not max_effort:
-            max_effort = self.parameters['max_effort']
-        if not mode:
-            mode = self.parameters['mode']
-        return self.send_goal(GripperCommand.Goal(gap=gap, spread=spread,
-                                                  max_effort=max_effort,
-                                                  mode=mode),
+            max_effort = self._local_params['max_effort']
+        return self.send_goal(GripperCommand.Goal(
+                                  command=GripperCommandMsg(
+                                      position=gap, max_effort=max_effort)),
                               timeout_sec=timeout_sec)

@@ -91,16 +91,14 @@ class BarrettHandClient(Node):
                 print(result)
             elif key == 's':
                 spread = min(max(0.0, float(input('  spread: '))), 180.0)
-                self._gripper.parameters['spread'] = radians(spread)
+                self._gripper.set_parameters({'spread': radians(spread)})
                 print('spread set to %f' % spread)
             elif key == 'e':
                 effort = min(max(0.0, float(input('  effort: '))), 180.0)
-                self._gripper.parameters['max_effort'] = effort
-                print('max_effort set to %f' % effort)
+                self._gripper.set_parameters({'max_effort': effort})
             elif key == 'm':
                 mode = int(input('  mode(0: PINCH, 1: ENCOMPASS, 2: SCISSOR, 3: GRIP): '))
-                self._gripper.parameters['mode'] = mode
-                print('mode set to %f' % mode)
+                self._gripper.set_parameters({'mode': mode})
             elif key == 'v':
                 velocity = float(input('  velocity: '))
                 self._gripper.set_velocity(velocity)
