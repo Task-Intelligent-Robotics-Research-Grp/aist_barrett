@@ -148,7 +148,7 @@ class BarrettHandController : public rclcpp::Node
                                             0.0, max_inner_joint_angle);
                         pos[1] = pos[0];
                         pos[2] = pos[0];
-                        pos[3] = std::clamp(_spread, 0.0, M_PI);
+                        pos[3] = M_PI/180.0*std::clamp(_spread, 0.0, 180.0);
                         break;
                       case ENCOMPASS:
                         pos[0] = std::clamp(pos_from_height(
@@ -421,7 +421,7 @@ BarrettHandController::BarrettHandController(
                                        this, std::placeholders::_1),
                                   "finger velocity", {0.0, 1.0});
     _ddr.registerVariable<double>("spread", &_spread, "spread angle",
-                                  {0.0, M_PI/2});
+                                  {0.0, 180.0});
     _ddr.registerEnumVariable<int>("grasp_mode", PINCH,
                                    std::bind(
                                        &BarrettHandController::set_grasp_mode,

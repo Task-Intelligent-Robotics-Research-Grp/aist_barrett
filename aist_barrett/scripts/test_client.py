@@ -92,7 +92,7 @@ class BarrettHandClient(Node):
                 print(result)
             elif key == 's':
                 spread = min(max(0.0, float(input('  spread: '))), 180.0)
-                self._gripper.set_parameters({'spread': radians(spread)})
+                self._gripper.set_parameters({'spread': spread})
                 print('spread set to %f' % spread)
             elif key == 'v':
                 velocity = float(input('  velocity: '))
