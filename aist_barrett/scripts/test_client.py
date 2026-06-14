@@ -69,9 +69,10 @@ class BarrettHandClient(Node):
             print('  c:         Cancel motion')
             print('  w:         Wait until goal completed')
             print('  s:         Set spread')
-            print('  e:         Set max effort')
-            print('  m:         Set mode')
             print('  v:         Set velocity')
+            print('  e:         Set max effort')
+            print('  m:         Set grasp mode')
+            print('  t:         Set torque mode')
             print('  q:         Quit\n')
 
             key = input('>> ')
@@ -93,16 +94,19 @@ class BarrettHandClient(Node):
                 spread = min(max(0.0, float(input('  spread: '))), 180.0)
                 self._gripper.set_parameters({'spread': radians(spread)})
                 print('spread set to %f' % spread)
+            elif key == 'v':
+                velocity = float(input('  velocity: '))
+                self._gripper.set_parameters({'velocity': velocity})
             elif key == 'e':
                 effort = min(max(0.0, float(input('  effort: '))), 180.0)
                 self._gripper.set_parameters({'max_effort': effort})
             elif key == 'm':
-                mode = int(input('  mode(0: PINCH, 1: ENCOMPASS, 2: SCISSOR, 3: GRIP): '))
-                self._gripper.set_parameters({'mode': mode})
-            elif key == 'v':
-                velocity = float(input('  velocity: '))
-                self._gripper.set_velocity(velocity)
-                print('velocity set to %f' % velocity)
+                grasp_mode = int(input('  grasp mode(0: PINCH, 1: ENCOMPASS, 2: SCISSOR, 3: GRIP): '))
+                self._gripper.set_parameters({'grasp_mode': grasp_mode})
+            elif key == 't':
+                torque_mode = (input('  torque mode(t: True, other: False): ')\
+                               == 't')
+                self._gripper.set_parameters({'torque_mode': torque_mode})
             elif key=='q':
                 break
             else:

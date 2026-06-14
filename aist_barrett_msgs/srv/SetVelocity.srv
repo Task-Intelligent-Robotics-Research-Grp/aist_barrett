@@ -1,3 +1,0 @@
-float64 velocity  # desired velocity of finger/spread velocity
-bool    spread    # true: set spread velocity, false: set finger velocity
----

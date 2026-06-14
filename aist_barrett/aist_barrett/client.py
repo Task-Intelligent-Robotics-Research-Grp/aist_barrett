@@ -34,10 +34,8 @@
 import rclpy, threading
 from rclpy.callback_groups        import MutuallyExclusiveCallbackGroup
 from action_msgs.msg              import GoalStatus
-from std_srvs.srv                 import SetBool, Trigger
 from control_msgs.action          import GripperCommand
 from control_msgs.msg             import GripperCommand as GripperCommandMsg
-from aist_barrett_msgs.srv        import SetVelocity
 from aist_barrett_msgs.msg        import TactileStates
 from task_wrappers.service_client import ServiceClient
 from task_wrappers.action_client  import SimpleActionClient
@@ -50,7 +48,7 @@ from rclpy.node                   import Node
 #  class BarrettHand                                                 *
 #*********************************************************************
 class BarrettHand(SimpleActionClient):
-    _RemoteParams = ('velocity', 'spread', 'mode')
+    _RemoteParams = ('velocity', 'spread', 'grasp_mode', 'torque_mode')
 
     def __init__(self, node: Node, name: str='bhand'):
         self._name = name
@@ -65,16 +63,6 @@ class BarrettHand(SimpleActionClient):
         self._param_clnt   = ParameterClient(node, controller_ns)
         self._local_params = {'release_position': 0.32,
                               'max_effort':       10.0}
-
-        # Create service client for setting torque mode.
-        self._set_torque_mode \
-            = ServiceClient(node, SetBool, controller_ns + '/set_torque_mode',
-                            callback_group=self._cbg)
-
-        # Create service client for setting velocity.
-        self._set_velocity \
-            = ServiceClient(node, SetVelocity, controller_ns + '/set_velocity',
-                            callback_group=self._cbg)
 
     @property
     def name(self) -> str:
@@ -131,23 +119,6 @@ class BarrettHand(SimpleActionClient):
         timeout_sec = 1.0
         self._param_clnt.set_parameters_sync(remote_params,
                                              timeout_sec=timeout_sec)
-
-    def set_torque_mode(self, enable: bool):
-        """ Set finger velocity value to the gripper.
-
-        Args:
-          enable: `True` if torque mode turned on. `False` otherwise.
-        """
-        return self._set_velocity.call(SetBool.Request(data=enable))
-
-    def set_velocity(self, velocity: float, *, spread: bool=False):
-        """ Set velocity value to the gripper.
-
-        Args:
-          velocity: Velocity of the gripper.
-        """
-        return self._set_velocity.call(SetVelocity.Request(velocity=velocity,
-                                                           spread=spread))
 
     def pregrasp(self) -> None:
         """ Move to release position and return immediatelty.

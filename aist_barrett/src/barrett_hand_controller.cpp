@@ -43,12 +43,9 @@
 #include <ddynamic_reconfigure2/ddynamic_reconfigure2.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
-#include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 #include <control_msgs/action/gripper_command.hpp>
 #include <aist_barrett_msgs/msg/tactile_states.hpp>
-#include <aist_barrett_msgs/srv/set_velocity.hpp>
-#include <aist_barrett_msgs/srv/open_or_close.hpp>
 
 using namespace std::chrono_literals;
 
@@ -89,10 +86,6 @@ class BarrettHandController : public rclcpp::Node
     using timer_p               = rclcpp::TimerBase::SharedPtr;
     using tactile_states_t      = aist_barrett_msgs::msg::TactileStates;
     using float64_multi_array_t = std_msgs::msg::Float64MultiArray;
-    using trigger_t             = std_srvs::srv::Trigger;
-    using set_bool_t            = std_srvs::srv::SetBool;
-    using set_velocity_t        = aist_barrett_msgs::srv::SetVelocity;
-    using open_or_close_t       = aist_barrett_msgs::srv::OpenOrClose;
     using gripper_command_t     = control_msgs::action::GripperCommand;
     using vector_t              = std::vector<double>;
     using array4d               = std::array<double, 4>;
@@ -114,14 +107,6 @@ class BarrettHandController : public rclcpp::Node
     using goal_handle_p = std::shared_ptr<goal_handle_t<ACT> >;
     template <class ACT>
     using result_p      = std::unique_ptr<typename ACT::Result>;
-    template <class SRV>
-    using srv_p         = typename rclcpp::Service<SRV>::SharedPtr;
-    template <class SRV>
-    using req_cp        = typename SRV::Request::ConstSharedPtr;
-    template <class SRV>
-    using res_p         = typename SRV::Response::SharedPtr;
-    template <class SRV>
-    using clnt_p        = typename rclcpp::Client<SRV>::SharedPtr;
 
     enum Mode   { PINCH = 0, ENCOMPASS = 1, SCISSOR = 2, GRIP = 3 };
 
@@ -130,16 +115,9 @@ class BarrettHandController : public rclcpp::Node
 
   private:
   // Parameter stuffs
-    void        set_mode(int mode)                                      ;
-
-  // Service stuffs
-    void        set_torque_mode_cb(req_cp<set_bool_t> req,
-                                   res_p<set_bool_t>  res)              ;
-    void        set_velocity_cb(req_cp<set_velocity_t> req,
-                                res_p<set_velocity_t>)                  ;
-    void        open_or_close_cb(req_cp<open_or_close_t> req,
-                                 res_p<open_or_close_t>)                ;
-    void        idle_cb(req_cp<trigger_t>, res_p<trigger_t> res)        ;
+    void        set_grasp_mode(int grasp_mode)                          ;
+    void        set_torque_mode(bool enable)                            ;
+    void        set_velocity(double velocity)                           ;
 
   // Topic intput stuffs
     void        command_cb(msg_p<float64_multi_array_t> command)        ;
@@ -161,7 +139,7 @@ class BarrettHandController : public rclcpp::Node
                     constexpr double max_inner_joint_angle = 140.0/180.0*M_PI;
                     array4d          pos;
 
-                    switch (_mode)
+                    switch (get_parameter("grasp_mode").as_int())
                     {
                       default:
                       case PINCH:
@@ -238,7 +216,7 @@ class BarrettHandController : public rclcpp::Node
     double      actual_gap(const joint_state_t& joint_state) const
                 {
                     const auto& pos = joint_state.position;
-                    switch (_mode)
+                    switch (get_parameter("grasp_mode").as_int())
                     {
                       case PINCH:
                         return 2.0/3.0*(radius_from_pos(pos[0]) +
@@ -313,13 +291,10 @@ class BarrettHandController : public rclcpp::Node
   // libbarrett
     barrett::ProductManager             _pm;
     barrett::Hand* const                _hand;
-    bool                                _torque_mode;
     const vector_t                      _torque_coefficients;
 
   // Variable parameters
-    double                              _velocity;
     double                              _spread;
-    int                                 _mode;
     ddr_t                               _ddr;
 
   // Joint state stuffs
@@ -336,12 +311,6 @@ class BarrettHandController : public rclcpp::Node
 
   // Command stuffs
     const sub_p<float64_multi_array_t>  _command_sub;
-
-  // Service stuffs
-    const srv_p<set_bool_t>             _set_torque_mode_srv;
-    const srv_p<set_velocity_t>         _set_velocity_srv;
-    const srv_p<open_or_close_t>        _open_or_close_srv;
-    const srv_p<trigger_t>              _idle_srv;
 
   // Gripper command action stuffs
     array4d                             _goal_pos;
@@ -375,16 +344,13 @@ BarrettHandController::BarrettHandController(
     :rclcpp::Node("barrett_hand_controller", options),
      _pm(),
      _hand(_pm.foundHand() ? _pm.getHand() : nullptr),
-     _torque_mode(false),
      _torque_coefficients(ddynamic_reconfigure2::declare_read_only_parameter(
                               this, "torque_coefficients",
                             // default values obtained from pyHand 1.0 Manual
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
 
-     _velocity(0.0),
      _spread(0.0),
-     _mode(PINCH),
      _ddr(rclcpp::Node::SharedPtr(this)),
 
      _joint_state(),
@@ -417,30 +383,6 @@ BarrettHandController::BarrettHandController(
                       std::bind(&BarrettHandController::command_cb,
                                 this, std::placeholders::_1))),
 
-     _set_torque_mode_srv(create_service<set_bool_t>(
-                              "~/set_torque_mode",
-                              std::bind(
-                                  &BarrettHandController::set_torque_mode_cb,
-                                  this,
-                                  std::placeholders::_1,
-                                  std::placeholders::_2))),
-     _set_velocity_srv(create_service<set_velocity_t>(
-                           "~/set_velocity",
-                           std::bind(&BarrettHandController::set_velocity_cb,
-                                     this,
-                                     std::placeholders::_1,
-                                     std::placeholders::_2))),
-     _open_or_close_srv(create_service<open_or_close_t>(
-                            "~/open_or_close",
-                            std::bind(&BarrettHandController::open_or_close_cb,
-                                      this,
-                                      std::placeholders::_1,
-                                      std::placeholders::_2))),
-     _idle_srv(create_service<trigger_t>(
-                   "~/idle",
-                   std::bind(&BarrettHandController::idle_cb, this,
-                             std::placeholders::_1, std::placeholders::_2))),
-
      _goal_pos(),
      _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
                               this, "~/command",
@@ -470,22 +412,28 @@ BarrettHandController::BarrettHandController(
     _hand->initialize();
     RCLCPP_INFO_STREAM(get_logger(), "hand initialized");
     _hand->update();
-    if (_torque_mode)
-        _hand->setTorqueMode(barrett::Hand::WHOLE_HAND);
-    else
-        _hand->setPositionMode(barrett::Hand::WHOLE_HAND);
+    _hand->setPositionMode(barrett::Hand::WHOLE_HAND);
 
   // Parameters
-    _ddr.registerVariable<double>("velocity", &_velocity, "finger velocity",
-                                  {0.0, 1.0});
+    _ddr.registerVariable<double>("velocity", 0.0,
+                                   std::bind(
+                                       &BarrettHandController::set_velocity,
+                                       this, std::placeholders::_1),
+                                  "finger velocity", {0.0, 1.0});
     _ddr.registerVariable<double>("spread", &_spread, "spread angle",
                                   {0.0, M_PI/2});
-    _ddr.registerEnumVariable<int>("mode", PINCH,
-                                   std::bind(&BarrettHandController::set_mode,
-                                             this, std::placeholders::_1),
+    _ddr.registerEnumVariable<int>("grasp_mode", PINCH,
+                                   std::bind(
+                                       &BarrettHandController::set_grasp_mode,
+                                       this, std::placeholders::_1),
                                    "grasp mode",
                                    {{"Pinch", PINCH}, {"Encompass", ENCOMPASS},
                                     {"Scissor", SCISSOR}, {"GRIP",  GRIP}});
+    _ddr.registerEnumVariable<bool>("torque_mode", PINCH,
+                                   std::bind(
+                                       &BarrettHandController::set_torque_mode,
+                                       this, std::placeholders::_1),
+                                   "torque mode");
 
   // Joint state
     const auto
@@ -517,65 +465,31 @@ BarrettHandController::BarrettHandController(
 
 // Parameter stuffs
 void
-BarrettHandController::set_mode(int mode)
+BarrettHandController::set_grasp_mode(int grasp_mode)
 {
   // If required to change mode, fully open all fingers to avoid collision.
-    if (mode != _mode)
-    {
-        _mode = mode;
+    if (grasp_mode != get_parameter("grasp_mode").as_int())
         _hand->open(barrett::Hand::GRASP, true);
-    }
 }
 
-// Service stuffs
 void
-BarrettHandController::set_torque_mode_cb(req_cp<set_bool_t> req,
-                                          res_p<set_bool_t>  res)
+BarrettHandController::set_torque_mode(bool torque_mode)
 {
-    _torque_mode = req->data;
-    if (_torque_mode)
-        _hand->setTorqueMode(barrett::Hand::GRASP);
+    if (torque_mode)
+        _hand->setTorqueMode(barrett::Hand::WHOLE_HAND);
     else
         _hand->setPositionMode(barrett::Hand::WHOLE_HAND);
-    res->success = true;
     RCLCPP_INFO_STREAM(get_logger(), "torque mode "
-                       << (_torque_mode ? "enabled" : "disabled"));
+                       << (torque_mode ? "enabled" : "disabled"));
 }
 
 void
-BarrettHandController::set_velocity_cb(req_cp<set_velocity_t> req,
-                                       res_p<set_velocity_t>)
+BarrettHandController::set_velocity(double velocity)
 {
-    const auto  axis = (req->spread ? barrett::Hand::SPREAD
-                                    : barrett::Hand::GRASP);
-    _hand->velocityMove(barrett::Hand::jv_type(req->velocity), axis);
+    _hand->velocityMove(barrett::Hand::jv_type(velocity),
+                        barrett::Hand::WHOLE_HAND);
 
-    RCLCPP_INFO_STREAM(get_logger(), (req->spread ? "spread" : "fingers")
-                       << " velocity set to " << req->velocity);
-}
-
-void
-BarrettHandController::open_or_close_cb(req_cp<open_or_close_t> req,
-                                        res_p<open_or_close_t>)
-{
-    const auto  axis = (req->spread ? barrett::Hand::SPREAD
-                                    : barrett::Hand::GRASP);
-    if (req->close)
-        _hand->close(axis, true);
-    else
-        _hand->open(axis, true);
-
-    RCLCPP_INFO_STREAM(get_logger(), (req->spread ? "spraed" : "fingers")
-                       << ' ' << (req->close  ? "closed" : "opened"));
-}
-
-void
-BarrettHandController::idle_cb(req_cp<trigger_t>, res_p<trigger_t> res)
-{
-    _hand->idle();
-    res->success = true;
-
-    RCLCPP_INFO_STREAM(get_logger(), "idling");
+    RCLCPP_INFO_STREAM(get_logger(), "velocity set to " << velocity);
 }
 
 // Topic input stuffs
@@ -589,7 +503,7 @@ BarrettHandController::command_cb(msg_p<float64_multi_array_t> command)
         return;
     }
 
-    if (_torque_mode)
+    if (get_parameter("torque_mode").as_bool())
         _hand->setTorqueCommand(barrett::Hand::jt_type(command->data[0],
                                                        command->data[1],
                                                        command->data[2],

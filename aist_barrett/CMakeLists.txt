@@ -33,7 +33,7 @@ target_link_libraries(${PROJECT_NAME} ${BARRETT_LIBRARIES})
 rclcpp_components_register_nodes(
   ${PROJECT_NAME}
     PLUGIN     ${PROJECT_NAME}::BarrettHandController
-    EXECUTABLE parrett_hand_controller_node
+    EXECUTABLE barrett_hand_controller_node
 )
 
 ########################
