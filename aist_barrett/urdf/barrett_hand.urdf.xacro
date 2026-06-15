@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro"
        xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
   <xacro:macro name="barrett_hand"
-	       params="prefix parent_link mimic_outer_joints:=true *origin">
+	       params="prefix parent_link mimic_joints:=false *origin">
 
     <xacro:macro name="gray_color">
       <material name="">
@@ -29,7 +29,7 @@
     </xacro:macro>
 
     <xacro:macro name="barrett_finger"
-		 params="fingerprefix parent mimic_outer_joints *origin">
+		 params="fingerprefix parent mimic_joints *origin">
       <joint name="${fingerprefix}joint"
 	     type="revolute">
 	<xacro:insert_block name="origin"/>
@@ -74,7 +74,7 @@
 	<parent link="${fingerprefix}inner_link"/>
 	<child  link="${fingerprefix}outer_link"/>
 	<axis xyz="0 0 1"/>
-	<xacro:if value="${mimic_outer_joints}">
+	<xacro:if value="${mimic_joints}">
 	  <mimic joint="${fingerprefix}joint"
 		 multiplier="${45.0/140.0}" offset="0.0"/>
 	</xacro:if>
@@ -203,9 +203,11 @@
 	      rpy="0.0 0.0 ${radians(-90)}"/>
       <parent link="${prefix}base_link"/>
       <child  link="${prefix}right_finger_spread_link"/>
-      <axis  xyz="0 0 -1"/>
+      <axis   xyz="0 0 1"/>
+      <xacro:if value="${mimic_joints}">
+	<mimic joint="${prefix}spread_joint" multiplier="1.0" offset="0.0"/>
+      </xacro:if>
       <limit effort="30" velocity="1.5" lower="${radians(180)}" upper="0.0"/>
-      <mimic joint="${prefix}spread_joint" multiplier="-1" offset="0"/>
       <joint_properties damping="100.0" friction="1000.0"/>
       <dynamics damping="1000"/>
     </joint >
@@ -214,7 +216,7 @@
     <!-- Finger 1 -->
     <xacro:barrett_finger fingerprefix="${prefix}left_finger_"
 			  parent="${prefix}left_finger_spread_link"
-			  mimic_outer_joints="${mimic_outer_joints}">
+			  mimic_joints="${mimic_joints}">
       <origin xyz="${inner_x} 0.0 ${inner_z}"
 	      rpy="${radians(90)} 0.0 0.0"/>
     </xacro:barrett_finger>
@@ -222,7 +224,7 @@
     <!-- Finger 2 -->
     <xacro:barrett_finger fingerprefix="${prefix}right_finger_"
 			  parent="${prefix}right_finger_spread_link"
-			  mimic_outer_joints="${mimic_outer_joints}">
+			  mimic_joints="${mimic_joints}">
       <origin xyz="${inner_x} 0.0 ${inner_z}"
 	      rpy="${radians(90)} 0.0 0.0"/>
     </xacro:barrett_finger>
@@ -230,7 +232,7 @@
     <!-- Finger 3 -->
     <xacro:barrett_finger fingerprefix="${prefix}middle_finger_"
 			  parent="${prefix}base_link"
-			  mimic_outer_joints="${mimic_outer_joints}">
+			  mimic_joints="${mimic_joints}">
       <origin xyz="0.0 ${inner_x} ${base_height + inner_z}"
 	      rpy="${radians(90)} 0.0 ${radians(90)}"/>
     </xacro:barrett_finger>

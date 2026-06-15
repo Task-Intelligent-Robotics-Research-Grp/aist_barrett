@@ -1,8 +1,8 @@
 /**:
   $(var gripper_name)_controller:
     ros__parameters:
-      gripper_name:        $(var gripper_name)
-      mimic_outer_joints:  false
+      gripper_name: $(var gripper_name)
+      mimic_joints: false
       # Coefficients for converting controller torque values to Newton-meters
       # (Obtained from pyHand 1.0 Manual)
       torque_coefficients: [-2.85, 37.46e-4, -1.708e-6, 2.754e-10]

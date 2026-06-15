@@ -1,13 +1,13 @@
 <?xml version="1.0" ?>
 <robot name="aaa" xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <xacro:arg name="mimic_outer_joints"	default="true"/>
+  <xacro:arg name="mimic_joints"	default="true"/>
 
   <link name ="base_link"/>
 
   <xacro:include filename="$(find aist_barrett)/urdf/barrett_hand.urdf.xacro"/>
   <xacro:barrett_hand prefix="bhand_" parent_link="base_link"
-		      mimic_outer_joints="$(arg mimic_outer_joints)">
+		      mimic_joints="$(arg mimic_joints)">
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </xacro:barrett_hand>
 

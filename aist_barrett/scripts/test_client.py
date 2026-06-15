@@ -81,9 +81,7 @@ class BarrettHandClient(Node):
             elif key == 'r':
                 self._gripper.release(timeout_sec=0.0)
             elif is_float(key):
-                self._gripper.move(float(key),
-                                   spread=self._gripper.parameters['spread'],
-                                   timeout_sec=None)
+                self._gripper.move(float(key), timeout_sec=None)
             elif key == 'c':
                 self._gripper.cancel_goal()
             elif key == 'w':

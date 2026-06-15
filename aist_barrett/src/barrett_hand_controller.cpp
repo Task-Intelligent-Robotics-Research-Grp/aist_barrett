@@ -429,30 +429,30 @@ BarrettHandController::BarrettHandController(
                                    "grasp mode",
                                    {{"Pinch", PINCH}, {"Encompass", ENCOMPASS},
                                     {"Scissor", SCISSOR}, {"GRIP",  GRIP}});
-    _ddr.registerEnumVariable<bool>("torque_mode", PINCH,
-                                   std::bind(
-                                       &BarrettHandController::set_torque_mode,
-                                       this, std::placeholders::_1),
-                                   "torque mode");
+    _ddr.registerVariable<bool>("torque_mode", PINCH,
+                                std::bind(
+                                    &BarrettHandController::set_torque_mode,
+                                    this, std::placeholders::_1),
+                                "torque mode");
 
   // Joint state
     const auto
         device_name = ddynamic_reconfigure2::declare_read_only_parameter(
                           this, "device_name", "bhand");
     const auto
-        mimic_outer_joints
-            = ddynamic_reconfigure2::declare_read_only_parameter(
-                this, "mimic_outer_joints", true);
-    _joint_state.name.resize(mimic_outer_joints ? 4 : 8);
+        mimic_joints = ddynamic_reconfigure2::declare_read_only_parameter(
+                           this, "mimic_joints", true);
+    _joint_state.name.resize(mimic_joints ? 4 : 8);
     _joint_state.name[0] = device_name + "_left_finger_joint";
     _joint_state.name[1] = device_name + "_right_finger_joint";
     _joint_state.name[2] = device_name + "_middle_finger_joint";
     _joint_state.name[3] = device_name + "_spread_joint";
-    if (!mimic_outer_joints)
+    if (!mimic_joints)
     {
         _joint_state.name[4] = device_name + "_left_finger_outer_joint";
         _joint_state.name[5] = device_name + "_right_finger_outer_joint";
         _joint_state.name[6] = device_name + "_middle_finger_outer_joint";
+        _joint_state.name[7] = device_name + "_right_spread_joint";
     }
     _joint_state.position.resize(_joint_state.name.size(), 0.0);
     _joint_state.velocity.resize(_joint_state.name.size(), 0.0);
