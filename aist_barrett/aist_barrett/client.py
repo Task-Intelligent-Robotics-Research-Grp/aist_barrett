@@ -184,3 +184,7 @@ class BarrettHand(SimpleActionClient):
                                   command=GripperCommandMsg(
                                       position=gap, max_effort=max_effort)),
                               timeout_sec=timeout_sec)
+
+    def grasped(self, *, timeout_sec: Optional[float]=None):
+        _, result = self.wait(timeout_sec=timeout_sec)
+        return result.stalled
