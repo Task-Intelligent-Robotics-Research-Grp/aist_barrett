@@ -56,7 +56,7 @@ class BarrettHand(SimpleActionClient):
 
         # Create action client for gripper command.
         controller_ns = name + '_controller'
-        super().__init__(node, GripperCommand, controller_ns + '/command',
+        super().__init__(node, GripperCommand, controller_ns + '/gripper_cmd',
                          callback_group=self._cbg)
 
         # Create parameter client for setting/getting controller parameters.

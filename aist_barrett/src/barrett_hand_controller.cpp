@@ -385,7 +385,7 @@ BarrettHandController::BarrettHandController(
 
      _goal_pos(),
      _gripper_command_srv(rclcpp_action::create_server<gripper_command_t>(
-                              this, "~/command",
+                              this, "~/gripper_cmd",
                               std::bind(&BarrettHandController::goal_cb, this,
                                         std::placeholders::_1,
                                         std::placeholders::_2),

@@ -20,14 +20,10 @@ aist_barrett
 `barrett_hand_controller`ノードは，ROSからアクションまたはトピックを介して与えられるハンド制御命令を受信して`BarrettHand`ハードウェアの駆動命令に変換するコントローラ機能と，変換された命令をハードウェアに送信するドライバ機能の両方の役割を果たします．
 
 ### ROSアクション
+- **~/gripper_cmd**（[control_msgs/msg/GripperCommand](https://docs.ros2.org/latest/api/control_msgs/action/GripperCommand.html)型：
 
 ### 入力トピック
-- **~/commands**（[std_msgs/Float64MultiArray](https://docs.ros2.org/latest/api/std_msgs/msg/Float64MultiArray.html)型）：から2次元平面上の直交座標空間における並進・回転速度を受信し，それを左右の車輪の回転速度に変換しモーターに転送してハードウェアを動かす．差動二輪型移動台車の制御を想定
-### ROSサービス
-- **~/idle**（[std_srvs/Trigger](https://docs.ros2.org/latest/api/std_srvs/srv/Trigger.html)型）：ハンドの各軸を止めてアイドル状態にする
-- **~/grasp**（[std_srvs/SetBool](https://docs.ros2.org/latest/api/std_srvs/srv/SetBool.html)型）：`true`を与えれば3本の指をフルに閉じ，`false`を与えれば全開する．
-- **~/spared**（[std_srvs/SetBool](https://docs.ros2.org/latest/api/std_srvs/srv/SetBool.html)型）：`true`を与えれば，`spread`軸を回転して`left`と`right`の2本の指の向きを`middle`と同じにする．`false`を与えれば，`middle`の向きと反対にする．
-
+- **~/position_command**（[std_msgs/Float64MultiArray](https://docs.ros2.org/latest/api/std_msgs/msg/Float64MultiArray.html)型）：
 
 ### 出力トピック
 - **/joint_states**（[sensor_msgs/JointState](https://docs.ros2.org/latest/api/sensor_msgs/msg/JointState.html)型）：ハンドの各駆動軸の回転角とトルクをpublish
