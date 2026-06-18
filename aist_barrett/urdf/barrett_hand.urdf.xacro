@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro"
        xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller">
+  <xacro:include filename="$(find aist_barrett)/urdf/transmission.urdf.xacro"/>
+
   <xacro:macro name="barrett_hand"
 	       params="prefix parent_link mimic_joints:=false *origin">
 
@@ -240,6 +242,8 @@
     <include filename="$(find aist_barrett
 		       )/urdf/palm_tactile_sensors.urdf.xacro"/>
     <palm_tactile_sensors/>
+
+    <xacro:barrett_hand_transmission prefix="${prefix}"/>
 
   </xacro:macro>
 </robot>
