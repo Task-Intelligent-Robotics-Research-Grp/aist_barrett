@@ -294,6 +294,7 @@ class BarrettHandController : public rclcpp::Node
     const vector_t                      _torque_coefficients;
 
   // Variable parameters
+    int                                 _grasp_mode;
     double                              _spread;
     ddr_t                               _ddr;
 
@@ -350,6 +351,7 @@ BarrettHandController::BarrettHandController(
                               vector_t{-2.85, 3.746e-3,
                                        -1.708e-6, 2.754e-10})),
 
+     _grasp_mode(0),
      _spread(0.0),
      _ddr(rclcpp::Node::SharedPtr(this)),
 
@@ -468,8 +470,15 @@ void
 BarrettHandController::set_grasp_mode(int grasp_mode)
 {
   // If required to change mode, fully open all fingers to avoid collision.
-    if (grasp_mode != get_parameter("grasp_mode").as_int())
+    if (grasp_mode != _grasp_mode)
+    {
+        _grasp_mode = grasp_mode;
         _hand->open(barrett::Hand::GRASP, true);
+
+        const char* mode_names[]{"PINCH", "ENCOMPASS"," SCISSOR", "GRIP"};
+        RCLCPP_INFO_STREAM(get_logger(), "set grasp mode to "
+                           << mode_names[grasp_mode]);
+    }
 }
 
 void
@@ -479,6 +488,7 @@ BarrettHandController::set_torque_mode(bool torque_mode)
         _hand->setTorqueMode(barrett::Hand::WHOLE_HAND);
     else
         _hand->setPositionMode(barrett::Hand::WHOLE_HAND);
+
     RCLCPP_INFO_STREAM(get_logger(), "torque mode "
                        << (torque_mode ? "enabled" : "disabled"));
 }
