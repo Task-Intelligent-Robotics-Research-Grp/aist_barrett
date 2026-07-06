@@ -52,12 +52,11 @@ class BarrettHand(SimpleActionClient):
 
     def __init__(self, node: Node, name: str='bhand'):
         self._name = name
-        self._cbg  = MutuallyExclusiveCallbackGroup()
 
         # Create action client for gripper command.
         controller_ns = name + '_controller'
         super().__init__(node, GripperCommand, controller_ns + '/gripper_cmd',
-                         callback_group=self._cbg)
+                         callback_group=MutuallyExclusiveCallbackGroup())
 
         # Create parameter client for setting/getting controller parameters.
         self._param_clnt   = ParameterClient(node, controller_ns)
