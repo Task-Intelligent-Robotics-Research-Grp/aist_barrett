@@ -7,7 +7,6 @@ jobs:
     with:
       os: ubuntu-26.04
       ros_distro: lyrical
-      libbarrett_branch: resolute
 
 permissions:
   contents: write

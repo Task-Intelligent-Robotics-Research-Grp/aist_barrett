@@ -9,9 +9,6 @@ on:
       ros_distro:
         required: true
         type: string
-      libbarrett_branch:
-        required: true
-        type: string
 
 jobs:
   ros_build:
@@ -40,7 +37,7 @@ jobs:
 
     - name: Checkout dependencies
       run: |
-        vcs import . --input=aist_barrett/dependencies-${{ inputs.libbarrett_branch }}.repos
+        vcs import . --input=aist_barrett/dependencies-${{ inputs.ros_distro }}.repos
 
     - name: Patch libconfig
       run: |
