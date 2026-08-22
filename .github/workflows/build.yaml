@@ -37,7 +37,7 @@ jobs:
 
     - name: Checkout dependencies
       run: |
-        vcs import . --input=aist_barrett/dependencies-${{ inputs.ros_distro }}.repos
+        vcs import . --input=aist_barrett/dependencies.repos
 
     - name: Patch libconfig
       run: |
