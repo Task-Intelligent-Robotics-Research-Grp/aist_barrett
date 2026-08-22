@@ -31,13 +31,6 @@ jobs:
         mkdir ${WS}
         ln -s ${GITHUB_WORKSPACE} ${WS}/src
 
-    - name: Pre build
-      run: |
-        source /opt/ros/jazzy/setup.bash
-        cd ${WS}/src
-        rosdep update
-        rosdep install -iy --from-paths ./
-
     - name: Build documents of aist_barrett
       run: |
         cd ${WS}/src/aist_barrett
