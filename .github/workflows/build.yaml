@@ -69,23 +69,3 @@ jobs:
         source /opt/ros/${{ inputs.ros_distro }}/setup.bash
         cd ${WS}
         colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
-
-    - name: Build documents of aist_barrett
-      run: |
-        cd ${WS}/src/aist_barrett
-        doxygen
-
-    - name: Build documents of aist_barrett_msgs
-      run: |
-        cd ${WS}/src/aist_barrett/docs
-        rosdoc2 build --package-path ../aist_barrett_msgs
-        mv ./docs_output/aist_barrett_msgs ./html
-
-    - name: Upload artifact of aist_barrett
-      uses: actions/upload-pages-artifact@v4
-      with:
-        path: ./aist_barrett/docs/html
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v5
