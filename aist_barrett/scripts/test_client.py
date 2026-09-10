@@ -34,9 +34,9 @@
 #  Author: Toshio Ueshiba (t.ueshiba@aist.go.jp)
 #
 import rclpy, sys, threading
-from math                import radians
-from rclpy.node          import Node
-from aist_barrett.client import BarrettHand
+from math         import radians
+from rclpy.node   import Node
+from aist_barrett import BarrettHand
 
 #########################################################################
 #  class BarrettHandClient                                              #
