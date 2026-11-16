@@ -3,10 +3,27 @@ from launch.actions                    import (OpaqueFunction,
                                                IncludeLaunchDescription)
 from launch.substitutions              import (Command, FindExecutable,
                                                PathJoinSubstitution,
-                                               ThisLaunchFileDir)
+                                               ThisLaunchFileDir,
+                                               IfElseSubstitution)
 from launch_ros.substitutions          import FindPackageShare
 from launch_ros.actions                import Node
 from launch_ros.parameter_descriptions import ParameterValue
+
+launch_arguments = [
+    {
+        'name':        'debug',
+        'default':     'false',
+        'description': 'Supress opening another terminal window if true',
+        'choices':     ['true', 'false', 'True', 'False']
+    },
+]
+
+def declare_launch_arguments(args):
+    return [DeclareLaunchArgument(arg['name'],
+                                  default_value=arg.get('default'),
+                                  description=arg.get('description'),
+                                  choices=arg.get('choices')) \
+            for arg in args]
 
 def launch_setup(context):
     robot_description = ParameterValue(
@@ -31,7 +48,12 @@ def launch_setup(context):
         Node(name=['test_client'],
              package='aist_barrett',
              executable=['test_client.py'],
-             prefix=['gnome-terminal --tab --wait --'],
+             prefix=[
+                 IfElseSubstitution(
+                     LaunchConfiguration('debug'),
+                     if_value='',
+                     else_value='gnome-terminal --tab --wait --active --')
+             ],
              output='screen'),
         Node(name='rviz', package='rviz2', executable='rviz2',
              output='screen',
@@ -43,4 +65,5 @@ def launch_setup(context):
     ]
 
 def generate_launch_description():
-    return LaunchDescription([OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(declare_launch_arguments(launch_arguments) + \
+                             [OpaqueFunction(function=launch_setup)])
